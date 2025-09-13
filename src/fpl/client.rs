@@ -45,8 +45,8 @@ impl FplApiClient {
         &self.base_url
     }
 
-    async fn get_request(&self, endpoint: &str, params: Option<HashMap<String, String>>) -> Result<Value> {
-        let url = format!("{}/{}/", self.base_url, endpoint);
+    async fn _get_request(&self, endpoint: impl Into<String>, params: Option<HashMap<String, String>>) -> Result<Value> {
+        let url = format!("{}/{}/", self.base_url, endpoint.into());
         info!("Making GET request to {} with params {:?}", url, params);
 
         let mut request = self.client.get(&url);
@@ -66,18 +66,42 @@ impl FplApiClient {
         Ok(json)
     }
 
-    pub async fn get_fixtures(&self, gameweek: Option<u32>) -> Result<Value> {
+    pub async fn get_general(&self) -> Result<Value>{
+        self._get_request("bootstrap-static", None).await
+    }
+
+    pub async fn get_fixtures(&self, gameweek: Option<i32>) -> Result<Value> {
         let params = gameweek.map(|gw| {
             let mut map = HashMap::new();
             map.insert("event".to_string(), gw.to_string());
             map
         });
         
-        self.get_request("fixtures", params).await
+        self._get_request("fixtures", params).await
     }
 
-    pub async fn get_league(&self, league_id: u32) -> Result<Value> {
-        let endpoint = format!("leagues-classic/{}/standings", league_id);
-        self.get_request(&endpoint, None).await
+    pub async fn get_league(&self, league_id: i32) -> Result<Value> {
+        self._get_request(format!("leagues-classic/{}/standings", league_id), None).await
+    }
+
+    pub async fn get_manager_summary(&self, manager_id: i32) -> Result<Value> {
+        self._get_request(format!("entry/{}", manager_id), None).await
+    }
+    pub async fn get_manager_history(&self, manager_id: i32) -> Result<Value> {
+        self._get_request(format!("entry/{}/history", manager_id), None).await
+    }
+    pub async fn get_manager_transfers(&self, manager_id: i32) -> Result<Value> {
+        self._get_request(format!("entry/{}/transfers", manager_id), None).await
+    }
+    pub async fn get_manager_team(&self, manager_id: i32, gameweek: i32) -> Result<Value> {
+        self._get_request(format!("entry/{}/event/{}/picks", manager_id, gameweek), None).await
+    }
+
+    pub async fn get_player_summary(&self, player_id: i32) -> Result<Value> {
+        self._get_request(format!("element-summary/{}", player_id), None).await
+    }
+
+    pub async fn get_gameweek(&self, gameweek: i32) -> Result<Value> {
+        self._get_request(format!("event/{}/live", gameweek,), None).await
     }
 }
