@@ -1,84 +1,72 @@
+use serde::de::Error;
+use serde::Deserializer;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+use crate::fpl::fpl_client;
+
+#[derive(Debug, Deserialize)]
 pub struct Manager {
-    pub id: u32,
+    pub id: i32,
+    #[serde(rename = "name")]
     pub team_name: String,
+    #[serde(rename = "player_first_name")]
     pub first_name: String,
+    #[serde(rename = "player_last_name")]
     pub last_name: String,
-    pub leagues: Option<Vec<u32>>,
-    pub total_points: u32,
-    pub gw_points: u32,
+    #[serde(deserialize_with = "deserialize_classic_leagues")]
+    leagues: Vec<LeagueInfo>,
+    #[serde(rename = "summary_overall_points")]
+    pub total_points: i32,
+    #[serde(rename = "summary_event_points")]
+    pub gw_points: i32,
 }
 
 impl Manager {
-    pub fn new(id: u32) -> Self {
+    pub fn new(id: i32) -> Self {
         Self {
             id,
             team_name: String::new(),
             first_name: String::new(),
             last_name: String::new(),
-            leagues: None,
+            leagues: vec![],
             total_points: 0,
             gw_points: 0,
         }
     }
 
-    // Getters
-    pub fn id(&self) -> u32 {
-        self.id
+    pub async fn refresh_data(&self) {
+        let response = fpl_client().get_manager(self.id).await;
     }
 
-    pub fn team_name(&self) -> &str {
-        &self.team_name
+    pub fn get_league_ids(&self) -> impl Iterator<Item = (i32, &str)> + '_ {
+        self.leagues.iter().map(|league| (league.id, league.name.as_str()))
     }
+}
 
-    pub fn first_name(&self) -> &str {
-        &self.first_name
-    }
+#[derive(Deserialize, Debug)]
+struct LeagueInfo{
+    id: i32,
+    name: String,
+    created: String,
+    closed: bool,
+    admin_entry: i32,
+    start_event: i32,
+    entry_can_leave: bool,
+    entry_can_admin: bool,
+    entry_can_invite: bool,
+    rank_count: i32,
+    entry_percentile_rank: i32,
+    entry_rank: i32,
+    entry_last_rank: i32,
+} 
 
-    pub fn last_name(&self) -> &str {
-        &self.last_name
+fn deserialize_classic_leagues<'de, D>(deserializer: D) -> Result<Vec<LeagueInfo>, D::Error>
+where D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    struct LeaguesWrapper{
+        classic: Vec<LeagueInfo>,
     }
-
-    pub fn leagues(&self) -> Option<&Vec<u32>> {
-        self.leagues.as_ref()
-    }
-
-    pub fn total_points(&self) -> u32 {
-        self.total_points
-    }
-
-    pub fn gw_points(&self) -> u32 {
-        self.gw_points
-    }
-
-    // Setters
-    pub fn set_id(&mut self, id: u32) {
-        self.id = id;
-    }
-
-    pub fn set_team_name(&mut self, team_name: String) {
-        self.team_name = team_name;
-    }
-
-    pub fn set_first_name(&mut self, first_name: String) {
-        self.first_name = first_name;
-    }
-
-    pub fn set_last_name(&mut self, last_name: String) {
-        self.last_name = last_name;
-    }
-
-    pub fn set_leagues(&mut self, leagues: Option<Vec<u32>>) {
-        self.leagues = leagues;
-    }
-
-    pub fn set_total_points(&mut self, total_points: u32) {
-        self.total_points = total_points;
-    }
-
-    pub fn set_gw_points(&mut self, gw_points: u32) {
-        self.gw_points = gw_points;
-    }
+    let wrapper = LeaguesWrapper::deserialize(deserializer)?;
+    Ok(wrapper.classic)
 }
