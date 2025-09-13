@@ -10,6 +10,7 @@ mod fpl;
 mod utils;
 
 use bot::handlers::Handler;
+use fpl::client::init_fpl_service;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -24,6 +25,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
+
+    init_fpl_service()?;
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await

@@ -1,19 +1,37 @@
 use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
-use std::collections::HashMap;
+use std::{collections::HashMap, time::Duration};
 use tracing::{error, info};
 
-#[derive(Debug, Clone)]
+use std::sync::OnceLock;
+
+static FPL_CLIENT: OnceLock<FplApiClient> = OnceLock::new();
+
+pub fn init_fpl_service() -> Result<()> {
+    let client = FplApiClient::new();
+    FPL_CLIENT.set(client)
+        .map_err(|_| anyhow::anyhow!("FPL service already initialized"))?;
+    Ok(())
+}
+
+pub fn fpl_client() -> &'static FplApiClient {
+    FPL_CLIENT.get()
+        .expect("FPL service not initialized - call init_fpl_service() first")
+}
+
+#[derive(Debug)]
 pub struct FplApiClient {
     client: Client,
     base_url: String,
 }
 
 impl FplApiClient {
-    pub fn new() -> Self {
+    fn new() -> Self {
         let client = Client::builder()
-            .timeout(std::time::Duration::from_secs(5))
+            .pool_idle_timeout(Duration::from_secs(300))
+            .pool_max_idle_per_host(2)
+            .timeout(Duration::from_secs(5))
             .build()
             .expect("Failed to create HTTP client");
 
