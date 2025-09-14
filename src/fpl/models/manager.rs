@@ -34,13 +34,14 @@ impl Manager {
         }
     }
 
-    // pub async fn refresh_data(&self) {
-    //     let response = fpl_client().get_manager(self.id).await;
-    // }
+    pub async fn refresh_data(&self) {
+        let response = fpl_client().get_manager_summary(self.id).await;
+    }
 
     pub fn get_league_ids(&self) -> impl Iterator<Item = (i32, &str)> + '_ {
         self.leagues.iter().map(|league| (league.id, league.name.as_str()))
     }
+
 }
 
 #[derive(Deserialize, Debug)]
