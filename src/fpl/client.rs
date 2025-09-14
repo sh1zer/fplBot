@@ -81,7 +81,17 @@ impl FplApiClient {
     }
 
     pub async fn get_league(&self, league_id: i32) -> Result<Value> {
-        self._get_request(format!("leagues-classic/{}/standings", league_id), None).await
+        self.get_league_standings(league_id, None).await
+    }
+
+    pub async fn get_league_standings(&self, league_id: i32, page: Option<i32>) -> Result<Value> {
+        let params = page.map(|p| {
+            let mut map = HashMap::new();
+            map.insert("page_standings".to_string(), p.to_string());
+            map
+        });
+        
+        self._get_request(format!("leagues-classic/{}/standings", league_id), params).await
     }
 
     pub async fn get_manager_summary(&self, manager_id: i32) -> Result<Value> {

@@ -5,7 +5,7 @@ use serde_json::from_value;
 
 use crate::fpl::fpl_client;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LeagueStandings {
     #[serde(rename = "new_entries")]
     pub new_managers: NewManagers,
@@ -16,7 +16,7 @@ pub struct LeagueStandings {
     pub standings: Standings,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct NewManagers {
     pub has_next: bool,
     pub page: i32,
@@ -24,7 +24,7 @@ pub struct NewManagers {
     pub managers: Vec<LeagueManager>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LeagueInfo {
     pub id: i32,
     #[serde(rename = "name")]
@@ -53,7 +53,7 @@ pub struct LeagueInfo {
     pub league_rank: Option<i32>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Standings {
     pub has_next: bool,
     pub page: i32,
@@ -61,7 +61,7 @@ pub struct Standings {
     pub managers: Vec<StandingsManager>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct LeagueManager {
     pub id: i32,
     #[serde(rename = "name")]
@@ -90,7 +90,7 @@ pub struct LeagueManager {
     pub previous_rank: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct StandingsManager {
     pub id: i32,
     #[serde(rename = "event_total")]
@@ -115,9 +115,11 @@ pub struct StandingsManager {
 
 impl LeagueStandings {
     pub async fn fetch(league_id: i32) -> Result<Self>{
-        let response = fpl_client().get_league(league_id).await?;
+        Self::fetch_page(league_id, None).await
+    }
+    
+    pub async fn fetch_page(league_id: i32, page: Option<i32>) -> Result<Self>{
+        let response = fpl_client().get_league_standings(league_id, page).await?;
         Ok(from_value(response)?)
     }
-
-
 }
