@@ -3,7 +3,7 @@ use serenity::{
 };
 use tracing::info;
 
-use crate::bot::commands;
+use crate::{bot::commands, fpl};
 
 pub struct Handler;
 
@@ -83,15 +83,15 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
     if parts.len() < 4 {
         return;
     }
-    
-    let action = parts[1]; // prev, next, or refresh
+    // parts formatted like ("standings_prev_{}_{}", page, current_api_page)
+    let action = parts[1];
     let current_page: usize = parts[2].parse().unwrap_or(0);
     let current_api_page: i32 = parts[3].parse().unwrap_or(1);
     
-    // Extract league_id from the original message embed footer
+    // extract league_id from the embed footer
     let league_id = if let Some(embed) = component.message.embeds.first() {
         if let Some(footer) = &embed.footer {
-            // Parse "League ID: 12345 • Page X of Y" 
+            // parse "League ID: 12345 • Page X of Y" 
             footer.text.split("League ID: ")
                 .nth(1)
                 .and_then(|s| s.split(' ').next())
@@ -119,31 +119,16 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
         _ => current_page,
     };
     
-    // Determine if we need to fetch new API data
-    // Each API page contains ~50 entries, UI shows 10 per page
-    // So API page 1 contains UI pages 0-4, API page 2 contains UI pages 5-9, etc.
-    let needed_api_page = ((new_page / 5) + 1) as i32;
-    let fetch_new_data = needed_api_page != current_api_page || action == "refresh";
-    
-    let api_page_to_fetch = if fetch_new_data { Some(needed_api_page) } else { None };
-    
-    // Fetch standings (either fresh data or reuse if we don't need new API page)
-    let standings_result = if fetch_new_data {
-        crate::fpl::models::league::LeagueStandings::fetch_page(league_id, api_page_to_fetch).await
-    } else {
-        // For now, we'll still fetch to keep it simple. In a real implementation,
-        // you'd want to cache the standings data somewhere
-        crate::fpl::models::league::LeagueStandings::fetch_page(league_id, Some(current_api_page)).await
-    };
+    let needed_api_page = ((new_page / 2) + 1) as i32;
+    let standings_result = fpl::models::league::LeagueStandings::fetch_page(league_id, Some(needed_api_page)).await;
     
     match standings_result {
         Ok(standings) => {
-            // Adjust page if we went beyond available data
-            let per_page = 10;
+            let per_page = 25;
             let total_managers = standings.standings.managers.len();
-            let max_page = if total_managers == 0 { 0 } else { (total_managers - 1) / per_page };
+            let max_page = if total_managers == 0 { 0 } else { (50 * (needed_api_page as usize) + total_managers - 1) / per_page };
             let actual_page = new_page.min(max_page);
-            
+
             let embed = commands::league::build_standings_embed(&standings, actual_page);
             let buttons = commands::league::build_navigation_buttons(actual_page, &standings);
             
