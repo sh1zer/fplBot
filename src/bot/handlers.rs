@@ -14,7 +14,7 @@ impl EventHandler for Handler {
 
         let commands = vec![
             CreateCommand::new("hello").description("Say hello to the bot"),
-            commands::league::register(),
+            commands::standings::register(),
         ];
 
         match Command::set_global_commands(&ctx.http, commands).await {
@@ -32,7 +32,7 @@ impl EventHandler for Handler {
                         Ok(CreateInteractionResponse::Message(data))
                     },
                     "standings" => {
-                        commands::league::run(&ctx, &command).await
+                        commands::standings::run(&ctx, &command).await
                     },
                     _ => {
                         let data = CreateInteractionResponseMessage::new().content("Unknown command");
@@ -65,9 +65,7 @@ async fn handle_component_interaction(ctx: &Context, component: ComponentInterac
         return;
     }
 
-    let response = match component.data.custom_id.as_str() {
-        _ => "Unknown button",
-    };
+    let response = component.data.custom_id.as_str();
 
     let data = CreateInteractionResponseMessage::new()
         .content(response)
@@ -80,29 +78,20 @@ async fn handle_component_interaction(ctx: &Context, component: ComponentInterac
 
 async fn handle_standings_interaction(ctx: &Context, component: ComponentInteraction) {
     let parts: Vec<&str> = component.data.custom_id.split('_').collect();
-    if parts.len() < 4 {
+    if parts.len() < 3 {
         return;
     }
-    // parts formatted like ("standings_prev_{}_{}", page, current_api_page)
+    // parts formatted like ("standings_prev_{}", page)
     let action = parts[1];
     let current_page: usize = parts[2].parse().unwrap_or(0);
-    let current_api_page: i32 = parts[3].parse().unwrap_or(1);
-    
+
     // extract league_id from the embed footer
-    let league_id = if let Some(embed) = component.message.embeds.first() {
-        if let Some(footer) = &embed.footer {
-            // parse "League ID: 12345 • Page X of Y" 
-            footer.text.split("League ID: ")
-                .nth(1)
-                .and_then(|s| s.split(' ').next())
-                .and_then(|s| s.parse::<i32>().ok())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
-    
+    let league_id = component.message.embeds.first()
+        .and_then(|embed| embed.footer.as_ref())
+        .and_then(|footer| footer.text.split("League ID: ").nth(1))
+        .and_then(|s| s.split(' ').next())
+        .and_then(|s| s.parse::<i32>().ok());    
+
     let Some(league_id) = league_id else {
         let data = CreateInteractionResponseMessage::new()
             .content("Error: Could not determine league ID")
@@ -110,7 +99,7 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
         let _ = component.create_response(&ctx.http, CreateInteractionResponse::Message(data)).await;
         return;
     };
-    
+
     // Calculate new page and determine if we need new API data
     let new_page = match action {
         "prev" => current_page.saturating_sub(1),
@@ -118,20 +107,20 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
         "refresh" => current_page,
         _ => current_page,
     };
-    
+
     let needed_api_page = ((new_page / 2) + 1) as i32;
     let standings_result = fpl::models::league::LeagueStandings::fetch_page(league_id, Some(needed_api_page)).await;
-    
+
     match standings_result {
         Ok(standings) => {
             let per_page = 25;
             let total_managers = standings.standings.managers.len();
-            let max_page = if total_managers == 0 { 0 } else { (50 * (needed_api_page as usize) + total_managers - 1) / per_page };
+            let max_page = (50 * (needed_api_page as usize) + total_managers - 1) / per_page ;
             let actual_page = new_page.min(max_page);
 
-            let embed = commands::league::build_standings_embed(&standings, actual_page);
-            let buttons = commands::league::build_navigation_buttons(actual_page, &standings);
-            
+            let embed = commands::standings::build_standings_embed(&standings, actual_page);
+            let buttons = commands::standings::build_navigation_buttons(actual_page, &standings);
+
             let response = CreateInteractionResponse::UpdateMessage(
                 serenity::builder::CreateInteractionResponseMessage::new()
                     .embed(embed)
@@ -139,7 +128,7 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
                     .button(buttons.next)
                     .button(buttons.refresh)
             );
-            
+
             if let Err(why) = component.create_response(&ctx.http, response).await {
                 info!("Cannot update standings message: {}", why);
             }

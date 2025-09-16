@@ -8,7 +8,7 @@ use anyhow::{Result, anyhow};
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
     let league_id = extract_league_id(&command.data.options())?;
     let standings = LeagueStandings::fetch(league_id).await?;
-    
+
     let page = 0;
     let embed = build_standings_embed(&standings, page);
     let buttons = build_navigation_buttons(page, &standings);
@@ -37,33 +37,33 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
     let start_idx = (page * per_page) % 50;
     let end_idx = (start_idx + 25).min(managers.len());
     let page_managers = &managers[start_idx..end_idx];
-    
+ 
     // Calculate maximum widths needed for each column (from all managers for consistency)
     let max_rank_width = managers.iter()
         .map(|m| number_len(m.current_rank))
         .max()
         .unwrap_or(2);
-    
+ 
     let max_change_width = managers.iter()
         .map(|m| number_len(-(m.current_rank - m.previous_rank)))
         .max()
         .unwrap_or(4) + 3;
-    
+
     let max_points_width = managers.iter()
         .map(|m| number_len(m.total_points))
         .max()
         .unwrap_or(4);
-    
+
     let max_gw_width = managers.iter()
         .map(|m| number_len(m.gameweek_points))
         .max()
         .unwrap_or(4) + 2;
-    
+
     let separators_width: usize = 7;
     let fixed_width = max_rank_width + max_change_width + max_points_width + max_gw_width + separators_width;
     let total_available: usize = 40;
     let name_width = total_available.saturating_sub(fixed_width).max(5); // minimum 5 chars for names
-    
+
     let mut description = String::new();
     description.push_str("```");
     // description.push_str(format!("{}{}{}{}", max_rank_width, max_change_width, max_points_width, max_gw_width).as_str());
@@ -85,7 +85,7 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
             gw_width = max_gw_width
         ));
     }
-    
+
     description.push_str("```");
 
     let total_pages = if standings.standings.has_next {
@@ -116,21 +116,20 @@ pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> Nav
     let per_page = 25;
     let total_managers = standings.standings.managers.len();
     let api_has_next = standings.standings.has_next;
-    let current_api_page = standings.standings.page;
     let total_pages_current = (total_managers + per_page - 1) / per_page;
     let has_prev = page > 0;
     let has_next = page + 1 < total_pages_current || api_has_next;
     
     NavigationButtons {
-        prev: CreateButton::new(format!("standings_prev_{}_{}", page, current_api_page))
+        prev: CreateButton::new(format!("standings_prev_{}", page))
             .label("⬅️ Previous")
             .style(ButtonStyle::Secondary)
             .disabled(!has_prev),
-        next: CreateButton::new(format!("standings_next_{}_{}", page, current_api_page))
+        next: CreateButton::new(format!("standings_next_{}", page))
             .label("Next ➡️")
             .style(ButtonStyle::Secondary)
             .disabled(!has_next),
-        refresh: CreateButton::new(format!("standings_refresh_{}_{}", page, current_api_page))
+        refresh: CreateButton::new(format!("standings_refresh_{}", page))
             .label("🔄 Refresh")
             .style(ButtonStyle::Primary),
     }
