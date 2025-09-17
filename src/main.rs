@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use dotenvy::dotenv;
-use fplbot::database::service::init_db_service;
+use crate::database::service::init_db_service;
 use serenity::prelude::*;
 use std::env;
 use tracing::{error, info};

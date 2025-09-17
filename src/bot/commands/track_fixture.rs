@@ -3,6 +3,7 @@ use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateB
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use crate::fpl::models::league::{LeagueStandings, StandingsManager};
 use anyhow::{Result, anyhow};
+use tracing::{info, error};
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("track_fixture")
@@ -16,5 +17,5 @@ pub fn register() -> CreateCommand {
         )
 }
 pub async fn test(){
-    
+    info!("Test function called in track_fixture");
 }

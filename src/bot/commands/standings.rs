@@ -4,15 +4,31 @@ use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateB
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use crate::fpl::models::league::{LeagueStandings, StandingsManager};
 use anyhow::{Result, anyhow};
+use tracing::{info, error};
 
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
+    let user_id = &command.user.name;
+    info!("Processing standings command for user {}", user_id);
+    
     let league_id = extract_league_id(&command.data.options())?;
-    let standings = LeagueStandings::fetch(league_id).await?;
+    info!("Fetching standings for league_id: {} requested by user {}", league_id, user_id);
+    
+    let standings = match LeagueStandings::fetch(league_id).await {
+        Ok(standings) => {
+            info!("Successfully fetched standings for league_id: {} (user {})", league_id, user_id);
+            standings
+        }
+        Err(e) => {
+            error!("Failed to fetch standings for league_id: {} (user {}): {}", league_id, user_id, e);
+            return Err(e);
+        }
+    };
 
     let page = 0;
     let embed = build_standings_embed(&standings, page);
     let buttons = build_navigation_buttons(page, &standings);
 
+    info!("Successfully built standings response for league_id: {} (user {})", league_id, user_id);
     Ok(CreateInteractionResponse::Message(
         CreateInteractionResponseMessage::new()
             .embed(embed)
@@ -26,8 +42,14 @@ fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
     match options.first() {
         Some(ResolvedOption {
             value: ResolvedValue::Integer(id), ..
-        }) => Ok(*id as i32),
-        _ => Err(anyhow!("Please provide a valid league ID")),
+        }) => {
+            // info!("Extracted league_id: {}", id);
+            Ok(*id as i32)
+        }
+        _ => {
+            error!("No valid league_id provided in command options");
+            Err(anyhow!("Please provide a valid league ID"))
+        }
     }
 }
 

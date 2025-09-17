@@ -16,6 +16,7 @@ impl EventHandler for Handler {
             CreateCommand::new("hello").description("Say hello to the bot"),
             commands::standings::register(),
             commands::fixtures::register(),
+            commands::manager::register(),
         ];
 
         match Command::set_global_commands(&ctx.http, commands).await {
@@ -37,6 +38,9 @@ impl EventHandler for Handler {
                     },
                     "fixtures" => {
                         commands::fixtures::run(&ctx, &command).await
+                    }
+                    "update_manager_id" => {
+                        commands::manager::run(&ctx, &command).await
                     }
                     _ => {
                         let data = CreateInteractionResponseMessage::new().content("Unknown command");
