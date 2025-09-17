@@ -1,10 +1,36 @@
 
+/// Represents a Premier League team with full name and short name.
 #[derive(Debug, Clone)]
 pub struct TeamName {
+    /// Full team name (e.g., "Arsenal")
     pub name: &'static str,
+    /// Short team name/abbreviation (e.g., "ARS")
     pub short_name: &'static str,
 }
 
+/// Returns team name information for a given FPL team ID.
+/// 
+/// Maps the FPL API team IDs to their corresponding team names and abbreviations.
+/// This is useful for displaying human-readable team names in Discord messages.
+/// 
+/// # Parameters
+/// 
+/// * `id` - The FPL team ID (1-20 for Premier League teams)
+/// 
+/// # Returns
+/// 
+/// A `TeamName` struct containing the full name and short name. Returns 
+/// "Unknown" team if the ID is not recognized.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use fplbot::fpl::models::teams::get_team_name;
+/// 
+/// let arsenal = get_team_name(1);
+/// assert_eq!(arsenal.name, "Arsenal");
+/// assert_eq!(arsenal.short_name, "ARS");
+/// ```
 pub fn get_team_name(id: i32) -> TeamName {
     match id {
         1 => TeamName { name: "Arsenal", short_name: "ARS" },

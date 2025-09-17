@@ -20,7 +20,6 @@ pub fn register() -> CreateCommand {
 
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
-    info!("Processing update_manager_id command for user {}", user_id);
 
     if let Some(ResolvedOption { value: ResolvedValue::Integer(id), ..}) = command.data.options().first(){
         info!("Attempting to update manager_id to {} for user {}", id, user_id);
