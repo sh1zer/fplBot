@@ -1,3 +1,8 @@
+//! League standings command implementation
+//!
+//! Provides Discord slash command functionality for displaying FPL league standings
+//! with interactive pagination and navigation controls.
+
 use std::borrow::Cow;
 use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ButtonStyle};
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
@@ -6,6 +11,26 @@ use crate::fpl::models::league::{LeagueStandings, StandingsManager};
 use anyhow::{Result, anyhow};
 use tracing::{info, error};
 
+/// Main handler for the `/standings` slash command
+///
+/// Fetches and displays league standings for a given league ID with interactive
+/// pagination controls. Shows manager names, positions, and points in an embed format.
+///
+/// # Arguments
+/// * `_ctx` - Discord context (unused in current implementation)
+/// * `command` - The slash command interaction containing user input
+///
+/// # Returns
+/// * `Result<CreateInteractionResponse>` - Discord response with standings embed and navigation buttons
+///
+/// # Errors
+/// Returns error if:
+/// - League ID is not provided or invalid
+/// - FPL API request fails
+/// - League data cannot be processed
+///
+/// # Example Usage
+/// `/standings league_id:123456`
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
     info!("Processing standings command for user {}", user_id);
@@ -38,6 +63,18 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
     ))
 }
 
+/// Extracts league ID from Discord command options
+///
+/// Parses the first command option to extract the league ID integer value.
+///
+/// # Arguments
+/// * `options` - Array of resolved command options from Discord
+///
+/// # Returns
+/// * `Result<i32>` - The league ID as a 32-bit integer
+///
+/// # Errors
+/// Returns error if no valid integer option is provided
 fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
     match options.first() {
         Some(ResolvedOption {
@@ -53,6 +90,21 @@ fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
     }
 }
 
+/// Builds a Discord embed displaying league standings
+///
+/// Creates a formatted embed with standings data, including manager names, ranks,
+/// points, and gameweek performance. Uses fixed-width formatting for consistent alignment.
+///
+/// # Arguments
+/// * `standings` - The league standings data from FPL API
+/// * `page` - Current page number for pagination (0-based)
+///
+/// # Returns
+/// * `CreateEmbed` - Discord embed with formatted standings table
+///
+/// # Display Format
+/// Shows columns for: Rank, Change, Manager Name, Total Points, GW Points
+/// Uses code block formatting for monospace alignment
 pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> CreateEmbed {
     let managers = &standings.standings.managers;
     let per_page = 25;
@@ -128,12 +180,34 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
         )))
 }
 
+/// Navigation button configuration for standings pagination
+///
+/// Holds the three main navigation buttons used in standings displays.
 pub struct NavigationButtons {
+    /// Previous page button
     pub prev: CreateButton,
+    /// Next page button  
     pub next: CreateButton,
+    /// Refresh current page button
     pub refresh: CreateButton,
 }
 
+/// Creates navigation buttons for standings pagination
+///
+/// Builds previous, next, and refresh buttons with appropriate enabled/disabled states
+/// based on current page position and available data.
+///
+/// # Arguments
+/// * `page` - Current page number (0-based)
+/// * `standings` - League standings data to determine pagination limits
+///
+/// # Returns
+/// * `NavigationButtons` - Struct containing the three navigation buttons
+///
+/// # Button Behavior
+/// - Previous: Disabled on first page
+/// - Next: Disabled on last page (when no more data available)
+/// - Refresh: Always enabled
 pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> NavigationButtons {
     let per_page = 25;
     let total_managers = standings.standings.managers.len();
@@ -157,6 +231,13 @@ pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> Nav
     }
 }
 
+/// Registers the standings command with Discord
+///
+/// Creates the command definition for the `/standings` slash command with required
+/// league_id parameter.
+///
+/// # Returns
+/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("standings")
         .description("Get FPL league standings")
@@ -169,6 +250,19 @@ pub fn register() -> CreateCommand {
         )
 }
 
+/// Formats manager name to fit within specified width
+///
+/// Truncates long manager names using intelligent strategies:
+/// 1. Use full name if it fits
+/// 2. Use "First L." format if shorter
+/// 3. Use "First." if still too long
+///
+/// # Arguments
+/// * `manager` - The manager data containing the name
+/// * `name_width` - Maximum character width allowed
+///
+/// # Returns
+/// * `Cow<str>` - Formatted name that fits within the width constraint
 fn format_name(manager: &StandingsManager, name_width: usize) -> Cow<str>{
     let name: Cow<str> = if manager.manager_name.chars().count() <= name_width {
         Cow::Borrowed(&manager.manager_name)
@@ -187,6 +281,16 @@ fn format_name(manager: &StandingsManager, name_width: usize) -> Cow<str>{
     name
 }
 
+/// Calculates the character width needed to display a number
+///
+/// Counts the number of digits plus space for negative sign if applicable.
+/// Used for calculating column widths in standings tables.
+///
+/// # Arguments
+/// * `num` - The integer to measure
+///
+/// # Returns
+/// * `usize` - Number of characters needed to display the number
 fn number_len(mut num: i32) -> usize{
     let mut count = 0;
     if num <= 0{

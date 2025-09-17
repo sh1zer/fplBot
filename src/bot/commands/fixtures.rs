@@ -1,3 +1,8 @@
+//! Fixtures command implementation
+//!
+//! Provides Discord slash command functionality for displaying FPL gameweek fixtures
+//! with match details, scores, and team information.
+
 use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ButtonStyle};
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
@@ -7,7 +12,13 @@ use tracing::{info, error};
 
 use crate::fpl::models::fixtures::{fetch_fixtures, GameweekFixtures};
 
-
+/// Registers the fixtures command with Discord
+///
+/// Creates the command definition for the `/fixtures` slash command with required
+/// gameweek parameter.
+///
+/// # Returns
+/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("fixtures")
         .description("Get a given weeks fixtures")
@@ -20,6 +31,26 @@ pub fn register() -> CreateCommand {
         )
 }
 
+/// Main handler for the `/fixtures` slash command
+///
+/// Fetches and displays FPL fixtures for a specific gameweek with match details,
+/// scores, and kickoff times in an embed format.
+///
+/// # Arguments
+/// * `_ctx` - Discord context (unused in current implementation)
+/// * `command` - The slash command interaction containing user input
+///
+/// # Returns
+/// * `Result<CreateInteractionResponse>` - Discord response with fixtures embed
+///
+/// # Errors
+/// Returns error if:
+/// - Gameweek number is not provided or invalid
+/// - FPL API request fails
+/// - Fixture data cannot be processed
+///
+/// # Example Usage
+/// `/fixtures gameweek:1`
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
     info!("Processing fixtures command for user {}", user_id);
@@ -48,6 +79,18 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
     ))
 }
 
+/// Extracts gameweek number from Discord command options
+///
+/// Parses the first command option to extract the gameweek integer value.
+///
+/// # Arguments
+/// * `command` - The Discord command interaction containing options
+///
+/// # Returns
+/// * `Result<i32>` - The gameweek number as a 32-bit integer
+///
+/// # Errors
+/// Returns error if no valid integer option is provided
 fn extract_gameweek(command: &CommandInteraction) -> Result<i32>{
     let resolved = command.data.options();
     match resolved.first(){
@@ -62,6 +105,20 @@ fn extract_gameweek(command: &CommandInteraction) -> Result<i32>{
     }
 }
 
+/// Builds a Discord embed displaying gameweek fixtures
+///
+/// Creates a formatted embed with fixture data, including team names and kickoff times.
+/// Uses fixed-width formatting for consistent alignment in a code block.
+///
+/// # Arguments
+/// * `fixtures` - The gameweek fixtures data from FPL API
+///
+/// # Returns
+/// * `CreateEmbed` - Discord embed with formatted fixtures list
+///
+/// # Display Format
+/// Shows each fixture with kickoff time centered and team names aligned
+/// in the format: "Date Time\nHome Team - Away Team"
 fn build_fixtures_embed(fixtures: &GameweekFixtures) -> CreateEmbed{
     let mut description = String::new();
     description.push_str("```");

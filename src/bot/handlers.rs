@@ -1,3 +1,10 @@
+//! Discord event handlers for the FPL bot
+//!
+//! This module contains the main event handler implementation that processes
+//! Discord events, including command interactions and component interactions.
+//! It handles bot initialization, command registration, and routing of user
+//! interactions to appropriate command handlers.
+
 use serenity::{
     all::{Command, CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction, Ready, ComponentInteraction}, async_trait, prelude::*
 };
@@ -5,10 +12,21 @@ use tracing::info;
 
 use crate::{bot::commands, fpl};
 
+/// Main event handler for the Discord bot
+///
+/// Implements the Serenity [`EventHandler`] trait to process Discord events.
+/// Handles bot initialization, slash command registration, and interaction routing.
 pub struct Handler;
 
 #[async_trait]
 impl EventHandler for Handler {
+    /// Called when the bot successfully connects to Discord
+    ///
+    /// Registers all available slash commands globally and logs the bot's connection status.
+    ///
+    /// # Arguments
+    /// * `ctx` - The Discord context for making API calls
+    /// * `ready` - Information about the bot's ready state
     async fn ready(&self, ctx: Context, ready: Ready) {
         info!("Logged in as {}", ready.user.name);
 
@@ -25,6 +43,14 @@ impl EventHandler for Handler {
         }
     }
 
+    /// Handles incoming Discord interactions (commands and components)
+    ///
+    /// Routes slash commands to their respective handlers and processes
+    /// component interactions (button clicks, select menus, etc.).
+    ///
+    /// # Arguments
+    /// * `ctx` - The Discord context for making API calls
+    /// * `interaction` - The interaction data from Discord
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         match interaction {
             Interaction::Command(command) => {
@@ -67,6 +93,14 @@ impl EventHandler for Handler {
     }
 }
 
+/// Handles component interactions (buttons, select menus, etc.)
+///
+/// Routes component interactions based on their custom ID to appropriate handlers.
+/// Currently supports standings navigation buttons and other general components.
+///
+/// # Arguments
+/// * `ctx` - The Discord context for making API calls
+/// * `component` - The component interaction data
 async fn handle_component_interaction(ctx: &Context, component: ComponentInteraction) {
     if component.data.custom_id.starts_with("standings_") {
         handle_standings_interaction(ctx, component).await;
@@ -84,6 +118,20 @@ async fn handle_component_interaction(ctx: &Context, component: ComponentInterac
     }
 }
 
+/// Handles standings-specific component interactions
+///
+/// Processes navigation buttons (previous/next page) for league standings displays.
+/// Extracts pagination information from the component custom ID and updates the
+/// standings display with the requested page.
+///
+/// # Arguments
+/// * `ctx` - The Discord context for making API calls
+/// * `component` - The component interaction data with standings-specific custom ID
+///
+/// # Custom ID Format
+/// Expected format: `standings_{action}_{current_page}` where:
+/// - `action` can be "prev", "next", or "refresh"
+/// - `current_page` is the 0-based page number
 async fn handle_standings_interaction(ctx: &Context, component: ComponentInteraction) {
     let parts: Vec<&str> = component.data.custom_id.split('_').collect();
     if parts.len() < 3 {

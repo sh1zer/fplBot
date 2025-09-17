@@ -1,3 +1,8 @@
+//! Manager-related Discord commands
+//!
+//! Provides functionality for users to manage their FPL manager association
+//! within the Discord bot, including setting and updating manager IDs.
+
 use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ResolvedOption, ResolvedValue};
 use anyhow::{Result, anyhow};
 use serenity::builder::{CreateCommand, CreateCommandOption};
@@ -6,6 +11,13 @@ use tracing::{info, error};
 
 use crate::database::{models::DBUser, service::db_service};
 
+/// Registers the update_manager_id command with Discord
+///
+/// Creates the command definition for the `/update_manager_id` slash command
+/// that allows users to set their FPL manager ID.
+///
+/// # Returns
+/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("update_manager_id")
         .description("Update your own manager id")
@@ -18,6 +30,27 @@ pub fn register() -> CreateCommand {
         )
 }
 
+/// Main handler for the `/update_manager_id` slash command
+///
+/// Allows Discord users to set or update their FPL manager ID in the database.
+/// This association enables the bot to provide personalized FPL data and use
+/// default manager IDs in commands.
+///
+/// # Arguments
+/// * `_ctx` - Discord context (unused in current implementation)
+/// * `command` - The slash command interaction containing user input
+///
+/// # Returns
+/// * `Result<CreateInteractionResponse>` - Success or error response
+///
+/// # Errors
+/// Returns error if:
+/// - Manager ID is not provided or invalid
+/// - Database update operation fails
+/// - User cannot be identified
+///
+/// # Example Usage
+/// `/update_manager_id manager_id:123456`
 pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
 
