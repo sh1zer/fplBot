@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use dotenvy::dotenv;
+use fplbot::database::service::init_db_service;
 use serenity::prelude::*;
 use std::env;
 use tracing::{error, info};
@@ -8,6 +9,7 @@ use tracing::{error, info};
 mod bot;
 mod fpl;
 mod utils;
+mod database;
 
 use bot::handlers::Handler;
 use fpl::client::init_fpl_service;
@@ -25,8 +27,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
-
+    init_db_service().await?;
     init_fpl_service()?;
+
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)
         .await
