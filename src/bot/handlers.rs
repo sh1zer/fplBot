@@ -15,6 +15,7 @@ impl EventHandler for Handler {
         let commands = vec![
             CreateCommand::new("hello").description("Say hello to the bot"),
             commands::standings::register(),
+            commands::fixtures::register(),
         ];
 
         match Command::set_global_commands(&ctx.http, commands).await {
@@ -34,6 +35,9 @@ impl EventHandler for Handler {
                     "standings" => {
                         commands::standings::run(&ctx, &command).await
                     },
+                    "fixtures" => {
+                        commands::fixtures::run(&ctx, &command).await
+                    }
                     _ => {
                         let data = CreateInteractionResponseMessage::new().content("Unknown command");
                         Ok(CreateInteractionResponse::Message(data))
@@ -100,11 +104,9 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
         return;
     };
 
-    // Calculate new page and determine if we need new API data
     let new_page = match action {
         "prev" => current_page.saturating_sub(1),
         "next" => current_page + 1,
-        "refresh" => current_page,
         _ => current_page,
     };
 

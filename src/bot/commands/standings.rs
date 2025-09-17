@@ -43,7 +43,7 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
         .map(|m| number_len(m.current_rank))
         .max()
         .unwrap_or(2);
- 
+
     let max_change_width = managers.iter()
         .map(|m| number_len(-(m.current_rank - m.previous_rank)))
         .max()
@@ -119,7 +119,7 @@ pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> Nav
     let total_pages_current = (total_managers + per_page - 1) / per_page;
     let has_prev = page > 0;
     let has_next = page + 1 < total_pages_current || api_has_next;
-    
+
     NavigationButtons {
         prev: CreateButton::new(format!("standings_prev_{}", page))
             .label("⬅️ Previous")
