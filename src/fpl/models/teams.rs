@@ -2,9 +2,9 @@
 /// Represents a Premier League team with full name and short name.
 #[derive(Debug, Clone)]
 pub struct TeamName {
-    /// Full team name (e.g., "Arsenal")
+
     pub name: &'static str,
-    /// Short team name/abbreviation (e.g., "ARS")
+
     pub short_name: &'static str,
 }
 
