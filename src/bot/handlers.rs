@@ -6,7 +6,7 @@
 //! interactions to appropriate command handlers.
 
 use serenity::{
-    all::{Command, CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, Interaction, Ready, ComponentInteraction}, async_trait, prelude::*
+    all::{Command, ComponentInteraction, CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction, Ready}, async_trait, prelude::*
 };
 use tracing::info;
 
@@ -34,10 +34,12 @@ impl EventHandler for Handler {
             CreateCommand::new("hello").description("Say hello to the bot"),
             commands::standings::register(),
             commands::fixtures::register(),
-            commands::manager::register(),
+            commands::update_manager_id::register(),
+            commands::check_manager_id::register(),
         ];
-
-        match Command::set_global_commands(&ctx.http, commands).await {
+        let guild_id = GuildId::new(1221876813165363270); // Replace with your server's ID
+        match guild_id.set_commands(&ctx.http, commands).await {
+        // match Command::set_global_commands(&ctx.http, commands).await {
             Ok(_) => info!("Successfully registered slash commands"),
             Err(e) => info!("Failed to register slash commands: {}", e),
         }
@@ -66,7 +68,10 @@ impl EventHandler for Handler {
                         commands::fixtures::run(&ctx, &command).await
                     }
                     "update_manager_id" => {
-                        commands::manager::run(&ctx, &command).await
+                        commands::update_manager_id::run(&ctx, &command).await
+                    }
+                    "check_manager_id" => {
+                        commands::check_manager_id::run(&ctx, &command).await
                     }
                     _ => {
                         let data = CreateInteractionResponseMessage::new().content("Unknown command");

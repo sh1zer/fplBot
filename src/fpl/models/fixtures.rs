@@ -10,9 +10,8 @@ use crate::fpl::fpl_client;
 /// Represents a collection of fixtures for a specific gameweek.
 #[derive(Debug, Clone, Deserialize)]
 pub struct GameweekFixtures{
-    /// The gameweek number these fixtures belong to
     pub gameweek: i32,
-    /// List of all fixtures in this gameweek
+
     pub fixtures: Vec<Fixture>,
 }
 
@@ -57,7 +56,6 @@ pub struct Fixture {
 /// Represents a statistic for a fixture (e.g., goals, assists).
 #[derive(Debug, Clone, Deserialize)]
 pub struct FixtureStat {
-
     pub identifier: String,
 
     pub a: Vec<StatEntry>,
@@ -68,7 +66,6 @@ pub struct FixtureStat {
 /// Represents a single statistical entry for a player in a fixture.
 #[derive(Debug, Clone, Deserialize)]
 pub struct StatEntry {
-
     pub value: i32,
 
     pub element: i32,

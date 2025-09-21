@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 /// performance statistics, pricing information, injury status, and ranking data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
-
     pub chance_of_playing_next_round: Option<i32>,
 
     pub chance_of_playing_this_round: Option<i32>,

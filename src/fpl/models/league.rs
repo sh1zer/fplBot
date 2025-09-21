@@ -24,7 +24,6 @@ pub struct LeagueStandings {
 /// Represents new manager entries in a league.
 #[derive(Debug, Deserialize, Clone)]
 pub struct NewManagers {
-
     pub has_next: bool,
 
     pub page: i32,
@@ -36,7 +35,6 @@ pub struct NewManagers {
 /// Contains metadata about an FPL league.
 #[derive(Debug, Deserialize, Clone)]
 pub struct LeagueInfo {
-
     pub id: i32,
 
     #[serde(rename = "name")]
@@ -79,7 +77,6 @@ pub struct LeagueInfo {
 /// Represents the standings section of league data.
 #[derive(Debug, Deserialize, Clone)]
 pub struct Standings {
-
     pub has_next: bool,
 
     pub page: i32,
@@ -91,7 +88,6 @@ pub struct Standings {
 /// Represents a manager's entry in a league (used for new entries).
 #[derive(Debug, Deserialize, Clone)]
 pub struct LeagueManager {
-
     pub id: i32,
 
     #[serde(rename = "name")]
@@ -134,7 +130,6 @@ pub struct LeagueManager {
 /// Represents a manager's position in league standings.
 #[derive(Debug, Deserialize, Clone)]
 pub struct StandingsManager {
-
     pub id: i32,
 
     #[serde(rename = "event_total")]

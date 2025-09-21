@@ -91,7 +91,6 @@ pub struct PlayerPointsExplanation {
 /// Detailed breakdown of points awarded for a specific statistic.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StatPointsBreakdown {
-
     pub identifier: String,
 
     pub points: i32,

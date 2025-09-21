@@ -17,7 +17,8 @@
 //! - Helper functions for data processing and response formatting
 
 pub mod standings;
-pub mod manager;
+pub mod update_manager_id;
+pub mod check_manager_id;
 pub mod player;
 pub mod track_fixture;
 pub mod fixtures;

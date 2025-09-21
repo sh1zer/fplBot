@@ -1,9 +1,9 @@
 CREATE TABLE users(
-  discord_id TEXT PRIMARY KEY,
+  discord_id INTEGER PRIMARY KEY,
   manager_id INTEGER
 );
 
 CREATE TABLE channels(
-  channel_id TEXT PRIMARY KEY,
+  channel_id INTEGER PRIMARY KEY,
   default_league_id INTEGER
 );

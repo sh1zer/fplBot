@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use serenity::all::{ChannelId, UserId};
 use sqlx::SqlitePool;
 use anyhow::Result;
 
@@ -33,20 +34,21 @@ impl Database {
         Ok(Self{pool})
     }
 
-    pub async fn get_user(&self, discord_id: &str) -> Result<DBUser> {
+    pub async fn get_user(&self, discord_id: UserId) -> Result<DBUser> {
+        let id = i64::from(discord_id);
         let row = sqlx::query!(
             "SELECT discord_id, manager_id FROM users WHERE discord_id = ?",
-            discord_id
+            id
         )
         .fetch_optional(&self.pool)
         .await?;
 
         let user = match row{
             Some(r) => DBUser { 
-                discord_id: r.discord_id.ok_or(anyhow!("User not found"))?,
+                discord_id: r.discord_id,
                 manager_id: r.manager_id.map(|i| i as i32),
             },
-            None => return Err(anyhow!("User not found"))
+            None => return Err(anyhow!("User {} not found", discord_id))
         };
         Ok(user)
     }
@@ -61,17 +63,18 @@ impl Database {
         Ok(())
     }
     
-    pub async fn get_channel(&self, channel_id: &str) -> Result<DBChannel> {
+    pub async fn get_channel(&self, channel_id: ChannelId) -> Result<DBChannel> {
+        let id = i64::from(channel_id);
         let row = sqlx::query!(
             "SELECT channel_id, default_league_id FROM channels WHERE channel_id = ?",
-            channel_id
+            id
         )
         .fetch_optional(&self.pool)
         .await?;
 
         let user = match row{
             Some(r) => DBChannel{
-                channel_id: r.channel_id.ok_or(anyhow!("User not found"))?,
+                channel_id: r.channel_id,
                 default_league_id: r.default_league_id.map(|i| i as i32),
             },
             None => return Err(anyhow!("User not found"))
