@@ -1,0 +1,59 @@
+-- CREATE TABLE gameweek_player_stats (
+--     gameweek   INTEGER NOT NULL,
+--     player_id  INTEGER NOT NULL,
+--
+--     minutes INTEGER NOT NULL,
+--     goals_scored INTEGER NOT NULL,
+--     assists INTEGER NOT NULL,
+--     clean_sheets INTEGER NOT NULL,
+--     goals_conceded INTEGER NOT NULL,
+--     own_goals INTEGER NOT NULL,
+--     penalties_saved INTEGER NOT NULL,
+--     penalties_missed INTEGER NOT NULL,
+--     yellow_cards INTEGER NOT NULL,
+--     red_cards INTEGER NOT NULL,
+--     saves INTEGER NOT NULL,
+--     bonus INTEGER NOT NULL,
+--     bps INTEGER NOT NULL,
+--     clearances_blocks_interceptions INTEGER NOT NULL,
+--     recoveries INTEGER NOT NULL,
+--     tackles INTEGER NOT NULL,
+--     defensive_contribution INTEGER NOT NULL,
+--     starts INTEGER NOT NULL,
+--
+--     influence REAL NOT NULL,
+--     creativity REAL NOT NULL,
+--     threat REAL NOT NULL,
+--     ict_index REAL NOT NULL,
+--     expected_goals REAL NOT NULL,
+--     expected_assists REAL NOT NULL,
+--     expected_goal_involvements REAL NOT NULL,
+--     expected_goals_conceded REAL NOT NULL,
+--
+--     total_points INTEGER NOT NULL,
+--     in_dreamteam INTEGER NOT NULL,   -- bool 0/1
+--     modified INTEGER NOT NULL,       -- bool 0/1
+--     PRIMARY KEY (gameweek, player_id)
+-- );
+--
+-- CREATE INDEX idx_gw_points ON gameweek_player_stats (gameweek, total_points DESC);
+-- CREATE INDEX idx_player_gw ON gameweek_player_stats (player_id, gameweek);
+--
+-- CREATE TABLE gameweek_player_points_breakdown (
+--     gameweek            INTEGER NOT NULL,
+--     player_id           INTEGER NOT NULL,
+--     fixture_id          INTEGER NOT NULL,
+--     identifier          TEXT    NOT NULL,
+--     points              INTEGER NOT NULL,
+--     value               INTEGER NOT NULL,
+--     points_modification INTEGER NOT NULL,
+--     PRIMARY KEY (gameweek, player_id, fixture_id, identifier),
+--     FOREIGN KEY (gameweek, player_id)
+--         REFERENCES gameweek_player_stats (gameweek, player_id)
+--         ON DELETE CASCADE
+-- );
+--
+-- CREATE INDEX idx_breakdown_player_fixture
+--     ON gameweek_player_points_breakdown (gameweek, player_id, fixture_id);
+-- CREATE INDEX idx_breakdown_fixture
+--     ON gameweek_player_points_breakdown (gameweek, fixture_id);

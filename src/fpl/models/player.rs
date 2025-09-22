@@ -1,152 +1,126 @@
 use serde::{Deserialize, Serialize};
-
+use chrono::{DateTime, Utc};
+use crate::utils::deserializers::de_f64_from_string;
 /// Represents a Fantasy Premier League player with comprehensive statistics and metadata.
 /// 
 /// This struct contains all the data returned by the FPL API for a player, including
 /// performance statistics, pricing information, injury status, and ranking data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
+    pub can_transact: bool,
+    pub can_select: bool,
     pub chance_of_playing_next_round: Option<i32>,
-
     pub chance_of_playing_this_round: Option<i32>,
-
     pub code: i32,
-
     pub cost_change_event: i32,
-
     pub cost_change_event_fall: i32,
-
     pub cost_change_start: i32,
-
     pub cost_change_start_fall: i32,
-
     pub dreamteam_count: i32,
-
     pub element_type: i32,
-
-    pub ep_next: String,
-
-    pub ep_this: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub ep_next: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub ep_this: f64,
     pub event_points: i32,
-
     pub first_name: String,
-
-    pub form: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub form: f64,
     pub id: i32,
-
     pub in_dreamteam: bool,
-
     pub news: String,
-
-    pub news_added: Option<String>,
-
+    pub news_added: Option<DateTime<Utc>>,
     pub now_cost: i32,
-
     pub photo: String,
-
-    pub points_per_game: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub points_per_game: f64,
+    pub removed: bool,
     pub second_name: String,
-
-    pub selected_by_percent: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub selected_by_percent: f64,
     pub special: bool,
-
     pub squad_number: Option<i32>,
-
     pub status: String,
-
     pub team: i32,
-
     pub team_code: i32,
-
     pub total_points: i32,
-
     pub transfers_in: i32,
-
     pub transfers_in_event: i32,
-
     pub transfers_out: i32,
-
     pub transfers_out_event: i32,
-
-    pub value_form: String,
-
-    pub value_season: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub value_form: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub value_season: f64,
     pub web_name: String,
-
+    pub region: i32,
+    pub team_join_date: String,
+    pub birth_date: String,
+    pub has_temporary_code: bool,
+    pub opta_code: String,
     pub minutes: i32,
-
     pub goals_scored: i32,
-
     pub assists: i32,
-
     pub clean_sheets: i32,
-
     pub goals_conceded: i32,
-
     pub own_goals: i32,
-
     pub penalties_saved: i32,
-
     pub penalties_missed: i32,
-
     pub yellow_cards: i32,
-
     pub red_cards: i32,
-
     pub saves: i32,
-
     pub bonus: i32,
-
     pub bps: i32,
-
-    pub influence: String,
-
-    pub creativity: String,
-
-    pub threat: String,
-
-    pub ict_index: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub influence: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub creativity: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub threat: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub ict_index: f64,
+    pub clearances_blocks_interceptions: i32,
+    pub recoveries: i32,
+    pub tackles: i32,
+    pub defensive_contribution: i32,
     pub starts: i32,
-
-    pub expected_goals: String,
-
-    pub expected_assists: String,
-
-    pub expected_goal_involvements: String,
-
-    pub expected_goals_conceded: String,
-
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goals: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_assists: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goal_involvements: f64,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goals_conceded: f64,
     pub influence_rank: i32,
-
     pub influence_rank_type: i32,
-
     pub creativity_rank: i32,
-
     pub creativity_rank_type: i32,
-
     pub threat_rank: i32,
-
     pub threat_rank_type: i32,
-
     pub ict_index_rank: i32,
-
     pub ict_index_rank_type: i32,
-
     pub corners_and_indirect_freekicks_order: Option<i32>,
-
     pub corners_and_indirect_freekicks_text: String,
-
     pub direct_freekicks_order: Option<i32>,
-
     pub direct_freekicks_text: String,
-
     pub penalties_order: Option<i32>,
-
     pub penalties_text: String,
+    pub expected_goals_per_90: f64,
+    pub saves_per_90: f64,
+    pub expected_assists_per_90: f64,
+    pub expected_goal_involvements_per_90: f64,
+    pub expected_goals_conceded_per_90: f64,
+    pub goals_conceded_per_90: f64,
+    pub now_cost_rank: i32,
+    pub now_cost_rank_type: i32,
+    pub form_rank: i32,
+    pub form_rank_type: i32,
+    pub points_per_game_rank: i32,
+    pub points_per_game_rank_type: i32,
+    pub selected_rank: i32,
+    pub selected_rank_type: i32,
+    pub starts_per_90: f64,
+    pub clean_sheets_per_90: f64,
+    pub defensive_contribution_per_90: f64,
 }

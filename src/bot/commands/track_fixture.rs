@@ -14,6 +14,7 @@ use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, Crea
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use crate::fpl::models::league::{LeagueStandings, StandingsManager};
+use crate::utils::deserializers::de_f64_from_string;
 use anyhow::{Result, anyhow};
 use tracing::{info, error};
 

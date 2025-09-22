@@ -1,4 +1,9 @@
 use serde::{Deserialize, Serialize};
+use anyhow::Result;
+use serde_json::from_value;
+
+use crate::utils::deserializers::de_f64_from_string;
+use crate::fpl::fpl_client;
 
 // results for endpoint event/{event_id}/live
 
@@ -49,13 +54,17 @@ pub struct PlayerStats {
 
     pub bps: i32,
 
-    pub influence: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub influence: f64,
 
-    pub creativity: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub creativity: f64,
 
-    pub threat: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub threat: f64,
 
-    pub ict_index: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub ict_index: f64,
 
     pub clearances_blocks_interceptions: i32,
 
@@ -67,13 +76,17 @@ pub struct PlayerStats {
 
     pub starts: i32,
 
-    pub expected_goals: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goals: f64,
 
-    pub expected_assists: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_assists: f64,
 
-    pub expected_goal_involvements: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goal_involvements: f64,
 
-    pub expected_goals_conceded: String,
+    #[serde(deserialize_with = "de_f64_from_string")]
+    pub expected_goals_conceded: f64,
 
     pub total_points: i32,
 
@@ -99,3 +112,11 @@ pub struct StatPointsBreakdown {
 
     pub points_modification: i32,
 }
+
+
+pub async fn update_gameweek_info(gameweek: i32) -> Result<GameweekResponse>{
+    let response = fpl_client().get_gameweek(gameweek).await?;
+
+    Ok(from_value(response)?)
+}
+
