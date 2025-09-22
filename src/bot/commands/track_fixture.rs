@@ -39,13 +39,6 @@ pub fn register() -> CreateCommand {
         )
 }
 
-/// Test function for fixture tracking functionality
-///
-/// Placeholder function used for testing the logging infrastructure
-/// in the track_fixture module.
-///
-/// # TODO
-/// Replace with actual fixture tracking implementation
-pub async fn test(){
-    info!("Test function called in track_fixture");
-}
+// pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
+//
+// }
