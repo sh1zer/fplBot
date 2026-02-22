@@ -1,4 +1,4 @@
-use fplbot::fpl::{init_fpl_service, fpl_client};
+use fplbot::fpl::{client::init_fpl_service, fpl_client};
 use std::sync::Once;
 
 static INIT: Once = Once::new();
@@ -12,18 +12,21 @@ fn ensure_service_initialized() {
 #[tokio::test]
 async fn test_fpl_service_initialization() {
     ensure_service_initialized();
-    
-    assert_eq!(fpl_client().base_url(), "https://fantasy.premierleague.com/api");
+
+    assert_eq!(
+        fpl_client().base_url(),
+        "https://fantasy.premierleague.com/api"
+    );
 }
 
 #[tokio::test]
 async fn test_get_fixtures_without_gameweek() {
     ensure_service_initialized();
-    
+
     // This is an integration test that requires network access
     // In a real scenario, you might want to mock the HTTP client
     let result = fpl_client().get_fixtures(None).await;
-    
+
     match result {
         Ok(fixtures) => {
             // Verify the response has expected structure
@@ -39,9 +42,9 @@ async fn test_get_fixtures_without_gameweek() {
 #[tokio::test]
 async fn test_get_fixtures_with_gameweek() {
     ensure_service_initialized();
-    
+
     let result = fpl_client().get_fixtures(Some(1)).await;
-    
+
     match result {
         Ok(fixtures) => {
             assert!(fixtures.is_array() || fixtures.is_object());
@@ -55,10 +58,10 @@ async fn test_get_fixtures_with_gameweek() {
 #[tokio::test]
 async fn test_get_fixtures_invalid_gameweek() {
     ensure_service_initialized();
-    
+
     // Test with an invalid gameweek that should return 404 or error
     let result = fpl_client().get_fixtures(Some(100)).await;
-    
+
     match result {
         Ok(fixtures) => {
             // If it succeeds, verify it's empty or has no fixtures
@@ -78,10 +81,10 @@ async fn test_get_fixtures_invalid_gameweek() {
 #[tokio::test]
 async fn test_get_league() {
     ensure_service_initialized();
-    
+
     // Use a test league ID (this might fail if league doesn't exist)
     let result = fpl_client().get_league(123456).await;
-    
+
     match result {
         Ok(_) => {
             // League exists and returned data
@@ -96,10 +99,10 @@ async fn test_get_league() {
 #[tokio::test]
 async fn test_get_league_invalid_id() {
     ensure_service_initialized();
-    
+
     // Test with an obviously invalid league ID that should return 404
     let result = fpl_client().get_league(999999999).await;
-    
+
     // This should definitely fail
     match result {
         Ok(_) => {
@@ -116,7 +119,7 @@ async fn test_get_league_invalid_id() {
 #[tokio::test]
 async fn test_multiple_service_access() {
     ensure_service_initialized();
-    
+
     // Test that multiple accesses to the service work correctly
     assert_eq!(fpl_client().base_url(), fpl_client().base_url());
 }

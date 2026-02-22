@@ -1,4 +1,4 @@
-use fplbot::fpl::{init_fpl_service, models::league::LeagueStandings};
+use fplbot::fpl::{client::init_fpl_service, models::league::LeagueStandings};
 use serde_json::json;
 
 #[tokio::test]
@@ -69,7 +69,7 @@ async fn test_league_standings_deserialization() {
 
     // Assert standings
     assert_eq!(standings.standings.managers.len(), 2);
-    
+
     let first_manager = &standings.standings.managers[0];
     assert_eq!(first_manager.manager_name, "John Doe");
     assert_eq!(first_manager.current_rank, 1);
@@ -86,17 +86,20 @@ async fn test_league_standings_deserialization() {
 async fn test_league_standings_fetch_integration() {
     // Try to initialize, but don't fail if already initialized
     let _ = init_fpl_service();
-    
+
     // Test with a real league ID (this is a public test league)
     // Note: This test will fail if the league doesn't exist or is private
     let result = LeagueStandings::fetch(314).await;
-    
+
     match result {
         Ok(standings) => {
             // Basic assertions to ensure we got valid data
             assert!(standings.league_info.id > 0);
             assert!(!standings.league_info.league_name.is_empty());
-            println!("Successfully fetched league: {}", standings.league_info.league_name);
+            println!(
+                "Successfully fetched league: {}",
+                standings.league_info.league_name
+            );
         }
         Err(e) => {
             // Log the error but don't fail the test since the league might not exist
@@ -110,10 +113,10 @@ async fn test_league_standings_fetch_integration() {
 async fn test_league_standings_fetch_invalid_id() {
     // Try to initialize, but don't fail if already initialized
     let _ = init_fpl_service();
-    
+
     // Test with an invalid league ID
     let result = LeagueStandings::fetch(-1).await;
-    
+
     // Should return an error for invalid ID
     assert!(result.is_err());
 }
@@ -151,8 +154,19 @@ fn test_datetime_parsing() {
     });
 
     let standings: LeagueStandings = serde_json::from_value(json_data).unwrap();
-    
+
     // Verify dates parsed correctly
-    assert_eq!(standings.last_updated.format("%Y-%m-%d").to_string(), "2025-09-13");
-    assert_eq!(standings.league_info.created_date.format("%Y-%m-%d").to_string(), "2024-08-01");
+    assert_eq!(
+        standings.last_updated.format("%Y-%m-%d").to_string(),
+        "2025-09-13"
+    );
+    assert_eq!(
+        standings
+            .league_info
+            .created_date
+            .format("%Y-%m-%d")
+            .to_string(),
+        "2024-08-01"
+    );
 }
+

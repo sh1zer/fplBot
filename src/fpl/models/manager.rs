@@ -30,23 +30,23 @@ pub struct Manager {
 
 impl Manager {
     /// Creates a new Manager instance with the given ID.
-    /// 
+    ///
     /// All other fields are initialized to default values and should be
     /// populated by calling `refresh_data()`.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * `id` - The FPL manager ID
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// A new `Manager` instance with default field values.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use fplbot::fpl::models::manager::Manager;
-    /// 
+    ///
     /// let manager = Manager::new(123456);
     /// assert_eq!(manager.id, 123456);
     /// ```
@@ -63,12 +63,12 @@ impl Manager {
     }
 
     /// Refreshes the manager's data from the FPL API.
-    /// 
+    ///
     /// This method fetches the latest information about the manager
     /// from the FPL API but currently does not update the struct fields.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// let manager = Manager::new(123456);
     /// manager.refresh_data().await;
@@ -78,27 +78,28 @@ impl Manager {
     }
 
     /// Returns an iterator over the manager's league IDs and names.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// An iterator yielding tuples of (league_id, league_name).
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// for (league_id, league_name) in manager.get_league_ids() {
     ///     println!("League {}: {}", league_id, league_name);
     /// }
     /// ```
     pub fn get_league_ids(&self) -> impl Iterator<Item = (i32, &str)> + '_ {
-        self.leagues.iter().map(|league| (league.id, league.name.as_str()))
+        self.leagues
+            .iter()
+            .map(|league| (league.id, league.name.as_str()))
     }
-
 }
 
 /// Contains information about a league that a manager is participating in.
 #[derive(Deserialize, Debug)]
-struct LeagueInfo{
+struct LeagueInfo {
     id: i32,
 
     name: String,
@@ -124,18 +125,19 @@ struct LeagueInfo{
     entry_rank: i32,
 
     entry_last_rank: i32,
-} 
+}
 
 /// Custom deserializer for classic leagues data.
-/// 
+///
 /// The FPL API returns leagues in a nested structure with separate arrays
 /// for classic and head-to-head leagues. This function extracts only the
 /// classic leagues.
 fn deserialize_classic_leagues<'de, D>(deserializer: D) -> Result<Vec<LeagueInfo>, D::Error>
-where D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     #[derive(Deserialize)]
-    struct LeaguesWrapper{
+    struct LeaguesWrapper {
         classic: Vec<LeagueInfo>,
     }
     let wrapper = LeaguesWrapper::deserialize(deserializer)?;

@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use serde_json::from_value;
 
-use crate::utils::deserializers::de_f64_from_string;
 use crate::fpl::fpl_client;
+use crate::utils::deserializers::de_f64_from_string;
 
 // results for endpoint event/{event_id}/live
 
@@ -113,10 +113,8 @@ pub struct StatPointsBreakdown {
     pub points_modification: i32,
 }
 
-
-pub async fn update_gameweek_info(gameweek: i32) -> Result<GameweekResponse>{
+pub async fn update_gameweek_info(gameweek: i32) -> Result<GameweekResponse> {
     let response = fpl_client().get_gameweek(gameweek).await?;
 
     Ok(from_value(response)?)
 }
-

@@ -8,7 +8,7 @@ Returns standings for classic (total points) leagues. This endpoint supports sev
 
 ## Parameters
 
-### ✅ Working Parameters
+### Working Parameters
 
 #### `page_standings` 
 - **Type:** Integer
@@ -28,7 +28,7 @@ Returns standings for classic (total points) leagues. This endpoint supports sev
 - **Values:** Varies by league type
 - **Example:** `/leagues-classic/314/standings/?phase=1`
 
-### ❌ Non-Working Parameters
+### Non-Working Parameters
 - `limit` - Ignored
 - `event` - Ignored
 - `has_entry` - Ignored

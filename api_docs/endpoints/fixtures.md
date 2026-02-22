@@ -8,7 +8,7 @@ Returns fixture data for the Premier League season. This is one of the most usef
 
 ## Parameters
 
-### ✅ Working Parameters
+### Working Parameters
 
 #### `event` (gameweek filter)
 - **Type:** Integer (1-38)
@@ -22,7 +22,7 @@ Returns fixture data for the Premier League season. This is one of the most usef
 - **Returns:** 38 fixtures (19 home + 19 away)
 - **Example:** `/fixtures/?team=1`
 
-### ❌ Non-Working Parameters
+### Non-Working Parameters
 These parameters are accepted but ignored:
 - `finished` - Returns all fixtures regardless of completion status
 - `team_h` - Ignored (use `team` instead)

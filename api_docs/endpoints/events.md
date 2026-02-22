@@ -4,12 +4,12 @@
 **Base URL:** `https://fantasy.premierleague.com/api/events/`
 
 ## Overview
-🆕 **NEW DISCOVERY** - This endpoint was not in the original documentation but works!
+This endpoint was not in the original documentation but works!
 
 Returns an array of all gameweeks (events) with detailed statistics and metadata. This is extremely useful for getting gameweek-level data.
 
 ## Parameters
-❌ **No working parameters discovered** - Returns all 38 gameweeks regardless of query parameters.
+**No working parameters discovered** - Returns all 38 gameweeks regardless of query parameters.
 
 ## Response Format
 

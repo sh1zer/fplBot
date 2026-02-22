@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-use chrono::{DateTime, Utc};
 use crate::utils::deserializers::de_f64_from_string;
-/// Represents a Fantasy Premier League player with comprehensive statistics and metadata.
-/// 
+use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+/// Represents a Fantasy Premier League player
+///
 /// This struct contains all the data returned by the FPL API for a player, including
 /// performance statistics, pricing information, injury status, and ranking data.
 #[derive(Debug, Clone, Serialize, Deserialize)]
