@@ -1,4 +1,3 @@
-
 pub struct DBUser {
     pub discord_id: i64,
     pub manager_id: Option<i32>,

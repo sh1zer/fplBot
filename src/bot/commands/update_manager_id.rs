@@ -3,11 +3,14 @@
 //! Provides functionality for users to manage their FPL manager association
 //! within the Discord bot, including setting and updating manager IDs.
 
-use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ResolvedOption, ResolvedValue};
-use anyhow::{Result, anyhow};
+use anyhow::{anyhow, Result};
+use serenity::all::{
+    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
+    ResolvedOption, ResolvedValue,
+};
 use serenity::builder::{CreateCommand, CreateCommandOption};
-use serenity::model::application::{CommandOptionType};
-use tracing::{info, error};
+use serenity::model::application::CommandOptionType;
+use tracing::{error, info};
 
 use crate::database::{models::DBUser, service::db_service};
 
@@ -25,8 +28,9 @@ pub fn register() -> CreateCommand {
             CreateCommandOption::new(
                 CommandOptionType::Integer,
                 "manager_id",
-                "Your FPL manager id"
-            ).required(true)
+                "Your FPL manager id",
+            )
+            .required(true),
         )
 }
 
@@ -51,19 +55,37 @@ pub fn register() -> CreateCommand {
 ///
 /// # Example Usage
 /// `/update_manager_id manager_id:123456`
-pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
+pub async fn run(
+    _ctx: &Context,
+    command: &CommandInteraction,
+) -> Result<CreateInteractionResponse> {
     let user_id = command.user.id;
     let user_name = &command.user.name;
 
-    if let Some(ResolvedOption { value: ResolvedValue::Integer(id), ..}) = command.data.options().first(){
-        info!("Attempting to update manager_id to {} for user {} ({})", id, user_name, user_id);
-        let res = db_service().update_user(&DBUser{ discord_id: i64::from(user_id), manager_id: Some(*id as i32) }).await;
-        match res{
+    if let Some(ResolvedOption {
+        value: ResolvedValue::Integer(id),
+        ..
+    }) = command.data.options().first()
+    {
+        info!(
+            "Attempting to update manager_id to {} for user {} ({})",
+            id, user_name, user_id
+        );
+        let res = db_service()
+            .update_user(&DBUser {
+                discord_id: i64::from(user_id),
+                manager_id: Some(*id as i32),
+            })
+            .await;
+
+        match res {
             Ok(_) => {
-                info!("Successfully updated manager_id to {} for user {}", id, user_name);
+                info!(
+                    "Successfully updated manager_id to {} for user {}",
+                    id, user_name
+                );
                 Ok(CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                    .content("Manager_id update succesful")
+                    CreateInteractionResponseMessage::new().content("Manager_id update succesful"),
                 ))
             }
             Err(e) => {
@@ -71,10 +93,11 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
                 Err(anyhow!("Failed to update users manager_id"))
             }
         }
-    }
-    else{
-        error!("No manager_id provided in command options for user {}", user_id);
+    } else {
+        error!(
+            "No manager_id provided in command options for user {}",
+            user_id
+        );
         Err(anyhow!("Failed to find users discord_id"))
     }
 }
-

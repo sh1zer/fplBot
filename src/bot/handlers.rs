@@ -6,7 +6,12 @@
 //! interactions to appropriate command handlers.
 
 use serenity::{
-    all::{Command, ComponentInteraction, CreateCommand, CreateInteractionResponse, CreateInteractionResponseMessage, GuildId, Interaction, Ready}, async_trait, prelude::*
+    all::{
+        ComponentInteraction, CreateCommand, CreateInteractionResponse,
+        CreateInteractionResponseMessage, GuildId, Interaction, Ready,
+    },
+    async_trait,
+    prelude::*,
 };
 use tracing::info;
 
@@ -36,10 +41,11 @@ impl EventHandler for Handler {
             commands::fixtures::register(),
             commands::update_manager_id::register(),
             commands::check_manager_id::register(),
+            commands::update_channel_league_id::register(),
         ];
         let guild_id = GuildId::new(1221876813165363270); // Replace with your server's ID
         match guild_id.set_commands(&ctx.http, commands).await {
-        // match Command::set_global_commands(&ctx.http, commands).await {
+            // match Command::set_global_commands(&ctx.http, commands).await {
             Ok(_) => info!("Successfully registered slash commands"),
             Err(e) => info!("Failed to register slash commands: {}", e),
         }
@@ -60,23 +66,16 @@ impl EventHandler for Handler {
                     "hello" => {
                         let data = CreateInteractionResponseMessage::new().content("Hey!");
                         Ok(CreateInteractionResponse::Message(data))
-                    },
-                    "standings" => {
-                        commands::standings::run(&ctx, &command).await
-                    },
-                    "fixtures" => {
-                        commands::fixtures::run(&ctx, &command).await
                     }
-                    "update_manager_id" => {
-                        commands::update_manager_id::run(&ctx, &command).await
-                    }
-                    "check_manager_id" => {
-                        commands::check_manager_id::run(&ctx, &command).await
-                    }
+                    "standings" => commands::standings::run(&ctx, &command).await,
+                    "fixtures" => commands::fixtures::run(&ctx, &command).await,
+                    "update_manager_id" => commands::update_manager_id::run(&ctx, &command).await,
+                    "check_manager_id" => commands::check_manager_id::run(&ctx, &command).await,
                     _ => {
-                        let data = CreateInteractionResponseMessage::new().content("Unknown command");
+                        let data =
+                            CreateInteractionResponseMessage::new().content("Unknown command");
                         Ok(CreateInteractionResponse::Message(data))
-                    },
+                    }
                 };
 
                 if let Err(why) = match response {
@@ -84,16 +83,21 @@ impl EventHandler for Handler {
                     Err(e) => {
                         let error_response = CreateInteractionResponseMessage::new()
                             .content(format!("Error: {}", e));
-                        command.create_response(&ctx.http, CreateInteractionResponse::Message(error_response)).await
+                        command
+                            .create_response(
+                                &ctx.http,
+                                CreateInteractionResponse::Message(error_response),
+                            )
+                            .await
                     }
                 } {
                     info!("Cannot respond to slash command: {}", why);
                 }
-            },
+            }
             Interaction::Component(component) => {
                 handle_component_interaction(&ctx, component).await;
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
 }
@@ -118,7 +122,10 @@ async fn handle_component_interaction(ctx: &Context, component: ComponentInterac
         .content(response)
         .ephemeral(true);
 
-    if let Err(why) = component.create_response(&ctx.http, CreateInteractionResponse::Message(data)).await {
+    if let Err(why) = component
+        .create_response(&ctx.http, CreateInteractionResponse::Message(data))
+        .await
+    {
         info!("Cannot respond to component interaction: {}", why);
     }
 }
@@ -147,17 +154,22 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
     let current_page: usize = parts[2].parse().unwrap_or(0);
 
     // extract league_id from the embed footer
-    let league_id = component.message.embeds.first()
+    let league_id = component
+        .message
+        .embeds
+        .first()
         .and_then(|embed| embed.footer.as_ref())
         .and_then(|footer| footer.text.split("League ID: ").nth(1))
         .and_then(|s| s.split(' ').next())
-        .and_then(|s| s.parse::<i32>().ok());    
+        .and_then(|s| s.parse::<i32>().ok());
 
     let Some(league_id) = league_id else {
         let data = CreateInteractionResponseMessage::new()
             .content("Error: Could not determine league ID")
             .ephemeral(true);
-        let _ = component.create_response(&ctx.http, CreateInteractionResponse::Message(data)).await;
+        let _ = component
+            .create_response(&ctx.http, CreateInteractionResponse::Message(data))
+            .await;
         return;
     };
 
@@ -168,13 +180,14 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
     };
 
     let needed_api_page = ((new_page / 2) + 1) as i32;
-    let standings_result = fpl::models::league::LeagueStandings::fetch_page(league_id, Some(needed_api_page)).await;
+    let standings_result =
+        fpl::models::league::LeagueStandings::fetch_page(league_id, Some(needed_api_page)).await;
 
     match standings_result {
         Ok(standings) => {
             let per_page = 25;
             let total_managers = standings.standings.managers.len();
-            let max_page = (50 * (needed_api_page as usize) + total_managers - 1) / per_page ;
+            let max_page = (50 * (needed_api_page as usize) + total_managers - 1) / per_page;
             let actual_page = new_page.min(max_page);
 
             let embed = commands::standings::build_standings_embed(&standings, actual_page);
@@ -185,18 +198,20 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
                     .embed(embed)
                     .button(buttons.prev)
                     .button(buttons.next)
-                    .button(buttons.refresh)
+                    .button(buttons.refresh),
             );
 
             if let Err(why) = component.create_response(&ctx.http, response).await {
                 info!("Cannot update standings message: {}", why);
             }
-        },
+        }
         Err(e) => {
             let data = CreateInteractionResponseMessage::new()
                 .content(format!("Error fetching standings: {}", e))
                 .ephemeral(true);
-            let _ = component.create_response(&ctx.http, CreateInteractionResponse::Message(data)).await;
+            let _ = component
+                .create_response(&ctx.http, CreateInteractionResponse::Message(data))
+                .await;
         }
     }
 }

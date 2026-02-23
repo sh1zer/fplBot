@@ -3,13 +3,17 @@
 //! Provides Discord slash command functionality for displaying FPL league standings
 //! with interactive pagination and navigation controls.
 
-use std::borrow::Cow;
-use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ButtonStyle};
-use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
-use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
+use crate::database::service::db_service;
 use crate::fpl::models::league::{LeagueStandings, StandingsManager};
-use anyhow::{Result, anyhow};
-use tracing::{info, error};
+use anyhow::{anyhow, Result};
+use serenity::all::{
+    ButtonStyle, CommandInteraction, Context, CreateInteractionResponse,
+    CreateInteractionResponseMessage,
+};
+use serenity::builder::{CreateButton, CreateCommand, CreateCommandOption, CreateEmbed};
+use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
+use std::borrow::Cow;
+use tracing::{error, info};
 
 /// Main handler for the `/standings` slash command
 ///
@@ -31,20 +35,42 @@ use tracing::{info, error};
 ///
 /// # Example Usage
 /// `/standings league_id:123456`
-pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
+pub async fn run(
+    _ctx: &Context,
+    command: &CommandInteraction,
+) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
     info!("Processing standings command for user {}", user_id);
-    
-    let league_id = extract_league_id(&command.data.options())?;
-    info!("Fetching standings for league_id: {} requested by user {}", league_id, user_id);
-    
+
+    let league_id = if command.data.options().is_empty() {
+        let db = db_service();
+        let channel = db.get_channel(command.channel_id).await?;
+
+        channel
+            .default_league_id
+            .ok_or_else(|| anyhow!("No default league"))?
+    } else {
+        extract_league_id(&command.data.options())?
+    };
+
+    info!(
+        "Fetching standings for league_id: {} requested by user {}",
+        league_id, user_id
+    );
+
     let standings = match LeagueStandings::fetch(league_id).await {
         Ok(standings) => {
-            info!("Successfully fetched standings for league_id: {} (user {})", league_id, user_id);
+            info!(
+                "Successfully fetched standings for league_id: {} (user {})",
+                league_id, user_id
+            );
             standings
         }
         Err(e) => {
-            error!("Failed to fetch standings for league_id: {} (user {}): {}", league_id, user_id, e);
+            error!(
+                "Failed to fetch standings for league_id: {} (user {}): {}",
+                league_id, user_id, e
+            );
             return Err(e);
         }
     };
@@ -53,13 +79,16 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
     let embed = build_standings_embed(&standings, page);
     let buttons = build_navigation_buttons(page, &standings);
 
-    info!("Successfully built standings response for league_id: {} (user {})", league_id, user_id);
+    info!(
+        "Successfully built standings response for league_id: {} (user {})",
+        league_id, user_id
+    );
     Ok(CreateInteractionResponse::Message(
         CreateInteractionResponseMessage::new()
             .embed(embed)
             .button(buttons.prev)
             .button(buttons.next)
-            .button(buttons.refresh)
+            .button(buttons.refresh),
     ))
 }
 
@@ -78,11 +107,9 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
 fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
     match options.first() {
         Some(ResolvedOption {
-            value: ResolvedValue::Integer(id), ..
-        }) => {
-            // info!("Extracted league_id: {}", id);
-            Ok(*id as i32)
-        }
+            value: ResolvedValue::Integer(id),
+            ..
+        }) => Ok(*id as i32),
         _ => {
             error!("No valid league_id provided in command options");
             Err(anyhow!("Please provide a valid league ID"))
@@ -111,30 +138,37 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
     let start_idx = (page * per_page) % 50;
     let end_idx = (start_idx + 25).min(managers.len());
     let page_managers = &managers[start_idx..end_idx];
- 
+
     // Calculate maximum widths needed for each column (from all managers for consistency)
-    let max_rank_width = managers.iter()
+    let max_rank_width = managers
+        .iter()
         .map(|m| number_len(m.current_rank))
         .max()
         .unwrap_or(2);
 
-    let max_change_width = managers.iter()
+    let max_change_width = managers
+        .iter()
         .map(|m| number_len(-(m.current_rank - m.previous_rank)))
         .max()
-        .unwrap_or(4) + 3;
+        .unwrap_or(4)
+        + 3;
 
-    let max_points_width = managers.iter()
+    let max_points_width = managers
+        .iter()
         .map(|m| number_len(m.total_points))
         .max()
         .unwrap_or(4);
 
-    let max_gw_width = managers.iter()
+    let max_gw_width = managers
+        .iter()
         .map(|m| number_len(m.gameweek_points))
         .max()
-        .unwrap_or(4) + 2;
+        .unwrap_or(4)
+        + 2;
 
     let separators_width: usize = 7;
-    let fixed_width = max_rank_width + max_change_width + max_points_width + max_gw_width + separators_width;
+    let fixed_width =
+        max_rank_width + max_change_width + max_points_width + max_gw_width + separators_width;
     let total_available: usize = 40;
     let name_width = total_available.saturating_sub(fixed_width).max(5); // minimum 5 chars for names
 
@@ -242,11 +276,8 @@ pub fn register() -> CreateCommand {
     CreateCommand::new("standings")
         .description("Get FPL league standings")
         .add_option(
-            CreateCommandOption::new(
-                CommandOptionType::Integer,
-                "league_id",
-                "The FPL league ID"
-            ).required(true)
+            CreateCommandOption::new(CommandOptionType::Integer, "league_id", "The FPL league ID")
+                .required(false),
         )
 }
 
@@ -263,18 +294,28 @@ pub fn register() -> CreateCommand {
 ///
 /// # Returns
 /// * `Cow<str>` - Formatted name that fits within the width constraint
-fn format_name(manager: &StandingsManager, name_width: usize) -> Cow<str>{
+fn format_name(manager: &'_ StandingsManager, name_width: usize) -> Cow<'_, str> {
     let name: Cow<str> = if manager.manager_name.chars().count() <= name_width {
         Cow::Borrowed(&manager.manager_name)
     } else {
-        let (first_name, last_name) = manager.manager_name.split_once(" ").unwrap_or((&manager.manager_name, "")); 
+        let (first_name, last_name) = manager
+            .manager_name
+            .split_once(" ")
+            .unwrap_or((&manager.manager_name, ""));
         // creates truncated name like "John S."
-        let truncated = format!("{} {}.", first_name, last_name.chars().next().unwrap_or(' '));
+        let truncated = format!(
+            "{} {}.",
+            first_name,
+            last_name.chars().next().unwrap_or(' ')
+        );
         if truncated.chars().count() <= name_width {
             Cow::Owned(truncated)
         } else {
             // if truncated too long take first name
-            let first_only: String = first_name.chars().take(name_width.saturating_sub(1)).collect();
+            let first_only: String = first_name
+                .chars()
+                .take(name_width.saturating_sub(1))
+                .collect();
             Cow::Owned(format!("{}.", first_only))
         }
     };
@@ -291,16 +332,15 @@ fn format_name(manager: &StandingsManager, name_width: usize) -> Cow<str>{
 ///
 /// # Returns
 /// * `usize` - Number of characters needed to display the number
-fn number_len(mut num: i32) -> usize{
+fn number_len(mut num: i32) -> usize {
     let mut count = 0;
-    if num <= 0{
+    if num <= 0 {
         num *= -1;
         count += 1;
     }
-    while num > 0{
+    while num > 0 {
         num /= 10;
         count += 1;
     }
     count
 }
-

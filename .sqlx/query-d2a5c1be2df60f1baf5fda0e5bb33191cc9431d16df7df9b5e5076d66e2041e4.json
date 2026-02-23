@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR REPLACE INTO channels (channel_id, default_league_id) VALUES (?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "d2a5c1be2df60f1baf5fda0e5bb33191cc9431d16df7df9b5e5076d66e2041e4"
+}
