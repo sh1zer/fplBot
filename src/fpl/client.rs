@@ -185,7 +185,7 @@ impl FplApiClient {
     /// let standings = fpl_client().get_league(314).await?;
     /// ```
     pub async fn get_league(&self, league_id: i32) -> Result<Value> {
-        self.get_league_standings(league_id, None).await
+        self.get_league_standings(league_id, 1).await
     }
 
     /// Fetches league standings for a classic league with optional pagination.
@@ -209,8 +209,9 @@ impl FplApiClient {
     /// // Get second page of standings
     /// let page2 = fpl_client().get_league_standings(314, Some(2)).await?;
     /// ```
-    pub async fn get_league_standings(&self, league_id: i32, page: Option<i32>) -> Result<Value> {
-        let params = page.map(|p| {
+    pub async fn get_league_standings(&self, league_id: i32, page: i32) -> Result<Value> {
+        //this is a scuffed ass workaround because i have no idea what i meant originally
+        let params = Some(page).map(|p| {
             let mut map = HashMap::new();
             map.insert("page_standings".to_string(), p.to_string());
             map

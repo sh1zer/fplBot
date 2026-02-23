@@ -188,7 +188,7 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
 
     let needed_api_page = ((new_page / 2) + 1) as i32;
     let standings_result =
-        fpl::models::league::LeagueStandings::fetch_page(league_id, Some(needed_api_page)).await;
+        fpl::models::league::LeagueStandings::fetch_page(league_id, needed_api_page).await;
 
     match standings_result {
         Ok(standings) => {

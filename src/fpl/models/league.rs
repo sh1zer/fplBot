@@ -182,7 +182,7 @@ impl LeagueStandings {
     /// println!("League: {}", standings.league_info.league_name);
     /// ```
     pub async fn fetch(league_id: i32) -> Result<Self> {
-        Self::fetch_page(league_id, None).await
+        Self::fetch_page(league_id, 1).await
     }
 
     /// Fetches a specific page of league standings.
@@ -208,7 +208,7 @@ impl LeagueStandings {
     /// // Get second page  
     /// let page2 = LeagueStandings::fetch_page(314, Some(2)).await?;
     /// ```
-    pub async fn fetch_page(league_id: i32, page: Option<i32>) -> Result<Self> {
+    pub async fn fetch_page(league_id: i32, page: i32) -> Result<Self> {
         let response = fpl_client().get_league_standings(league_id, page).await?;
         Ok(from_value(response)?)
     }
