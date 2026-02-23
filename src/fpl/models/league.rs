@@ -175,7 +175,7 @@ impl LeagueStandings {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use fplbot::fpl::models::league::LeagueStandings;
     ///
     /// let standings = LeagueStandings::fetch(314).await?;
@@ -199,7 +199,7 @@ impl LeagueStandings {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use fplbot::fpl::models::league::LeagueStandings;
     ///
     /// // Get first page

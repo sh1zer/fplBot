@@ -50,7 +50,7 @@ pub fn init_fpl_service() -> Result<()> {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use fplbot::fpl::client::fpl_client;
 ///
 /// let client = fpl_client();
@@ -129,7 +129,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let general_data = fpl_client().get_general().await?;
     /// ```
     pub async fn get_general(&self) -> Result<Value> {
@@ -149,7 +149,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// // Get all fixtures
     /// let all_fixtures = fpl_client().get_fixtures(None).await?;
     ///
@@ -181,7 +181,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let standings = fpl_client().get_league(314).await?;
     /// ```
     pub async fn get_league(&self, league_id: i32) -> Result<Value> {
@@ -202,7 +202,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// // Get first page of standings
     /// let standings = fpl_client().get_league_standings(314, None).await?;
     ///
@@ -233,7 +233,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let manager_data = fpl_client().get_manager_summary(123456).await?;
     /// ```
     pub async fn get_manager_summary(&self, manager_id: i32) -> Result<Value> {
@@ -253,7 +253,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let history = fpl_client().get_manager_history(123456).await?;
     /// ```
     pub async fn get_manager_history(&self, manager_id: i32) -> Result<Value> {
@@ -273,7 +273,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let transfers = fpl_client().get_manager_transfers(123456).await?;
     /// ```
     pub async fn get_manager_transfers(&self, manager_id: i32) -> Result<Value> {
@@ -294,7 +294,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let team_picks = fpl_client().get_manager_team(123456, 10).await?;
     /// ```
     pub async fn get_manager_team(&self, manager_id: i32, gameweek: i32) -> Result<Value> {
@@ -318,7 +318,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let player_stats = fpl_client().get_player_summary(123).await?;
     /// ```
     pub async fn get_player_summary(&self, player_id: i32) -> Result<Value> {
@@ -339,7 +339,7 @@ impl FplApiClient {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let live_data = fpl_client().get_gameweek(10).await?;
     /// ```
     pub async fn get_gameweek(&self, gameweek: i32) -> Result<Value> {

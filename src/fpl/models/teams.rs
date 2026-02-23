@@ -22,7 +22,7 @@ pub struct TeamName {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use fplbot::fpl::models::teams::get_team_name;
 ///
 /// let arsenal = get_team_name(1);

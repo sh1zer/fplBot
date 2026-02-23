@@ -43,7 +43,7 @@ impl Manager {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// use fplbot::fpl::models::manager::Manager;
     ///
     /// let manager = Manager::new(123456);
@@ -68,7 +68,7 @@ impl Manager {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// let manager = Manager::new(123456);
     /// manager.refresh_data().await;
     /// ```
@@ -84,7 +84,7 @@ impl Manager {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```ignore
     /// for (league_id, league_name) in manager.get_league_ids() {
     ///     println!("League {}: {}", league_id, league_name);
     /// }

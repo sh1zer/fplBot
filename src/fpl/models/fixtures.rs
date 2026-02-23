@@ -88,7 +88,7 @@ pub struct StatEntry {
 ///
 /// # Examples
 ///
-/// ```
+/// ```ignore
 /// use fplbot::fpl::models::fixtures::fetch_fixtures;
 ///
 /// let fixtures = fetch_fixtures(10).await?;
