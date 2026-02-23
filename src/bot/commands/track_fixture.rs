@@ -10,13 +10,8 @@
 //! - User notification preferences
 //! - Integration with database for persistent tracking
 
-use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ButtonStyle};
-use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
-use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
-use crate::fpl::models::league::{LeagueStandings, StandingsManager};
-use crate::utils::deserializers::de_f64_from_string;
-use anyhow::{Result, anyhow};
-use tracing::{info, error};
+use serenity::all::{CommandOptionType};
+use serenity::builder::{CreateCommand, CreateCommandOption};
 
 /// Registers the track_fixture command with Discord
 ///

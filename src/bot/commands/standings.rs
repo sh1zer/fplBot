@@ -13,7 +13,7 @@ use serenity::all::{
 use serenity::builder::{CreateButton, CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use std::borrow::Cow;
-use tracing::{error, info};
+use log::{error, info};
 
 /// Main handler for the `/standings` slash command
 ///

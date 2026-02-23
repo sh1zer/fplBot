@@ -4,7 +4,7 @@ use dotenvy::dotenv;
 use crate::database::service::init_db_service;
 use serenity::prelude::*;
 use std::env;
-use tracing::{error, info};
+use log::{error, info};
 
 mod bot;
 mod fpl;

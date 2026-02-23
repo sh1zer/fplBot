@@ -1,26 +1,16 @@
-//! Manager-related Discord commands
-//!
-//! Provides functionality for users to manage their FPL manager association
-//! within the Discord bot, including setting and updating manager IDs.
-
-use anyhow::{anyhow, Ok, Result};
+#![allow(unused_imports)]
+use anyhow::{anyhow, Result};
+use log::{error, info};
 use serenity::all::{
-    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
-    ResolvedOption, ResolvedValue,
+    ChannelId, CommandInteraction, Context, CreateInteractionResponse,
+    CreateInteractionResponseMessage, ResolvedOption, ResolvedValue,
 };
 use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::model::application::CommandOptionType;
-use tracing::{error, info};
 
+use crate::database::models::DBChannel;
 use crate::database::{models::DBUser, service::db_service};
 
-/// Registers the update_manager_id command with Discord
-///
-/// Creates the command definition for the `/update_manager_id` slash command
-/// that allows users to set their FPL manager ID.
-///
-/// # Returns
-/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("update_channel_league_id")
         .description("Update the channels defualt league id")
@@ -34,18 +24,48 @@ pub fn register() -> CreateCommand {
         )
 }
 
-// pub async fn run(
-//     _ctx: &Context,
-//     command: &CommandInteraction,
-// ) -> Result<CreateInteractionResponse> {
-//     let channel_id = command.channel_id;
-//
-//     let league_id = command.data.options().first();
-//
-//     info!(
-//         "Attempting to update league_id to {} for channel {}",
-//         league_id as i32, channel_id
-//     );
-//
-//     Ok(().into())
-// }
+pub async fn run(
+    _ctx: &Context,
+    command: &CommandInteraction,
+) -> Result<CreateInteractionResponse> {
+    let channel_id: ChannelId = command.channel_id;
+
+    let league_id = extract_league_id(&command.data.options()[0])?;
+    // should probably be fine to go [0] since the argument is required
+
+    info!(
+        "Attempting to update league_id to {} for channel {}",
+        league_id, channel_id
+    );
+
+    let res = db_service()
+        .update_channel(&DBChannel {
+            channel_id: channel_id.into(),
+            default_league_id: Some(league_id),
+        })
+        .await;
+
+    match res {
+        Ok(_) => Ok(CreateInteractionResponse::Message(
+            CreateInteractionResponseMessage::new().content("channel league_id update succesful"),
+        )),
+        Err(e) => {
+            error!(
+                "Failed to update league_id for channel {}: {}",
+                channel_id, e
+            );
+            Err(anyhow!("Failed to update users manager_id"))
+        }
+    }
+}
+
+fn extract_league_id(option: &ResolvedOption) -> Result<i32> {
+    let val = &option.value;
+    match val {
+        ResolvedValue::Integer(id) => Ok(*id as i32),
+        _ => {
+            error!("No valid league_id provided in command options");
+            Err(anyhow!("Please provide a valid league ID"))
+        }
+    }
+}

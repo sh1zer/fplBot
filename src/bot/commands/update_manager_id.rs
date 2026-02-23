@@ -4,13 +4,13 @@
 //! within the Discord bot, including setting and updating manager IDs.
 
 use anyhow::{anyhow, Result};
+use log::{error, info};
 use serenity::all::{
     CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
     ResolvedOption, ResolvedValue,
 };
 use serenity::builder::{CreateCommand, CreateCommandOption};
 use serenity::model::application::CommandOptionType;
-use tracing::{error, info};
 
 use crate::database::{models::DBUser, service::db_service};
 

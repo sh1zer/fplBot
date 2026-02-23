@@ -3,12 +3,12 @@
 //! Provides Discord slash command functionality for displaying FPL gameweek fixtures
 //! with match details, scores, and team information.
 
-use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage, ButtonStyle};
-use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed, CreateButton};
+use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage};
+use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use crate::fpl::models::teams::get_team_name;
 use anyhow::{Result, anyhow};
-use tracing::{info, error};
+use log::{error, info};
 
 use crate::fpl::models::fixtures::{fetch_fixtures, GameweekFixtures};
 

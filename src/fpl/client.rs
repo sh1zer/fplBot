@@ -2,7 +2,7 @@ use anyhow::Result;
 use reqwest::Client;
 use serde_json::Value;
 use std::{collections::HashMap, time::Duration};
-use tracing::{error, info};
+use log::{error, info};
 
 use std::sync::OnceLock;
 

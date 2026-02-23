@@ -16,6 +16,7 @@
 //! - Main command execution handler
 //! - Helper functions for data processing and response formatting
 
+pub mod check_channel_league_id;
 pub mod check_manager_id;
 pub mod fixtures;
 pub mod player;

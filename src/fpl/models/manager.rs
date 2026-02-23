@@ -1,6 +1,5 @@
-use serde::de::Error;
 use serde::Deserializer;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::fpl::fpl_client;
 
@@ -74,7 +73,7 @@ impl Manager {
     /// manager.refresh_data().await;
     /// ```
     pub async fn refresh_data(&self) {
-        let response = fpl_client().get_manager_summary(self.id).await;
+        let _response = fpl_client().get_manager_summary(self.id).await;
     }
 
     /// Returns an iterator over the manager's league IDs and names.
