@@ -1,5 +1,5 @@
-use serde::Deserializer;
 use serde::Deserialize;
+use serde::Deserializer;
 
 use crate::fpl::fpl_client;
 

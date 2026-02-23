@@ -1,6 +1,6 @@
-use serde::{Deserialize};
-use chrono::{DateTime, Utc};
 use anyhow::Result;
+use chrono::{DateTime, Utc};
+use serde::Deserialize;
 use serde_json::from_value;
 
 use crate::fpl::fpl_client;
@@ -8,7 +8,6 @@ use crate::fpl::fpl_client;
 /// Represents the complete standings data for a classic FPL league.
 #[derive(Debug, Deserialize, Clone)]
 pub struct LeagueStandings {
-
     #[serde(rename = "new_entries")]
     pub new_managers: NewManagers,
 
@@ -162,54 +161,54 @@ pub struct StandingsManager {
 
 impl LeagueStandings {
     /// Fetches the first page of league standings.
-    /// 
+    ///
     /// A convenience method that calls `fetch_page` with no page parameter.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * `league_id` - The ID of the classic league
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(LeagueStandings)` - Successfully parsed league standings
     /// * `Err` - Network error, API error, or JSON parsing error
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use fplbot::fpl::models::league::LeagueStandings;
-    /// 
+    ///
     /// let standings = LeagueStandings::fetch(314).await?;
     /// println!("League: {}", standings.league_info.league_name);
     /// ```
-    pub async fn fetch(league_id: i32) -> Result<Self>{
+    pub async fn fetch(league_id: i32) -> Result<Self> {
         Self::fetch_page(league_id, None).await
     }
-    
+
     /// Fetches a specific page of league standings.
-    /// 
+    ///
     /// # Parameters
-    /// 
+    ///
     /// * `league_id` - The ID of the classic league
     /// * `page` - Optional page number (1-based). If `None`, fetches first page.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(LeagueStandings)` - Successfully parsed league standings
     /// * `Err` - Network error, API error, or JSON parsing error
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use fplbot::fpl::models::league::LeagueStandings;
-    /// 
+    ///
     /// // Get first page
     /// let page1 = LeagueStandings::fetch_page(314, None).await?;
-    /// 
+    ///
     /// // Get second page  
     /// let page2 = LeagueStandings::fetch_page(314, Some(2)).await?;
     /// ```
-    pub async fn fetch_page(league_id: i32, page: Option<i32>) -> Result<Self>{
+    pub async fn fetch_page(league_id: i32, page: Option<i32>) -> Result<Self> {
         let response = fpl_client().get_league_standings(league_id, page).await?;
         Ok(from_value(response)?)
     }
