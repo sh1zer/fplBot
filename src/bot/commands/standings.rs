@@ -6,6 +6,7 @@
 use crate::database::service::db_service;
 use crate::fpl::models::league::{LeagueStandings, StandingsManager};
 use anyhow::{anyhow, Result};
+use log::{error, info};
 use serenity::all::{
     ButtonStyle, CommandInteraction, Context, CreateInteractionResponse,
     CreateInteractionResponseMessage,
@@ -13,7 +14,6 @@ use serenity::all::{
 use serenity::builder::{CreateButton, CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 use std::borrow::Cow;
-use log::{error, info};
 
 /// Main handler for the `/standings` slash command
 ///
@@ -215,14 +215,9 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
 }
 
 /// Navigation button configuration for standings pagination
-///
-/// Holds the three main navigation buttons used in standings displays.
 pub struct NavigationButtons {
-    /// Previous page button
     pub prev: CreateButton,
-    /// Next page button  
     pub next: CreateButton,
-    /// Refresh current page button
     pub refresh: CreateButton,
 }
 

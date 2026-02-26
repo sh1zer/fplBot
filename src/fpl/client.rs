@@ -347,4 +347,22 @@ impl FplApiClient {
         self._get_request(format!("event/{}/live", gameweek,), None)
             .await
     }
+
+    /// Fetches the current gameweek number
+    pub async fn get_current_gameweek_id(&self) -> Result<i32> {
+        let res: Value = self._get_request("events", None).await?;
+
+        let events: &Vec<Value> = res
+            .as_array()
+            .ok_or_else(|| anyhow::anyhow!("/events/ return expected to be array"))?;
+
+        let gw: i64 = events
+            .iter()
+            .find(|event| event["is_current"].as_bool() == Some(true))
+            .ok_or_else(|| anyhow::anyhow!("error finding current gameweek"))?["id"]
+            .as_i64()
+            .ok_or_else(|| anyhow::anyhow!("error finding current gameweek"))?;
+
+        Ok(gw as i32)
+    }
 }

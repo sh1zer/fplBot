@@ -3,12 +3,14 @@
 //! Provides Discord slash command functionality for displaying FPL gameweek fixtures
 //! with match details, scores, and team information.
 
-use serenity::all::{CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage};
+use crate::fpl::models::teams::get_team_name;
+use anyhow::{anyhow, Result};
+use log::{error, info};
+use serenity::all::{
+    CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
+};
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
-use crate::fpl::models::teams::get_team_name;
-use anyhow::{Result, anyhow};
-use log::{error, info};
 
 use crate::fpl::models::fixtures::{fetch_fixtures, GameweekFixtures};
 
@@ -26,8 +28,9 @@ pub fn register() -> CreateCommand {
             CreateCommandOption::new(
                 CommandOptionType::Integer,
                 "gameweek",
-                "The gameweek number"
-            ).required(true)
+                "The gameweek number",
+            )
+            .required(true),
         )
 }
 
@@ -51,31 +54,46 @@ pub fn register() -> CreateCommand {
 ///
 /// # Example Usage
 /// `/fixtures gameweek:1`
-pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateInteractionResponse> {
+pub async fn run(
+    _ctx: &Context,
+    command: &CommandInteraction,
+) -> Result<CreateInteractionResponse> {
     let user_id = &command.user.name;
     info!("Processing fixtures command for user {}", user_id);
-    
+
     let week = extract_gameweek(command)?;
-    info!("Fetching fixtures for gameweek {} requested by user {}", week, user_id);
-    
+    info!(
+        "Fetching fixtures for gameweek {} requested by user {}",
+        week, user_id
+    );
+
     let fixtures = match fetch_fixtures(week).await {
         Ok(fixtures) => {
-            info!("Successfully fetched {} fixtures for gameweek {} (user {})", 
-                fixtures.fixtures.len(), week, user_id);
+            info!(
+                "Successfully fetched {} fixtures for gameweek {} (user {})",
+                fixtures.fixtures.len(),
+                week,
+                user_id
+            );
             fixtures
         }
         Err(e) => {
-            error!("Failed to fetch fixtures for gameweek {} (user {}): {}", week, user_id, e);
+            error!(
+                "Failed to fetch fixtures for gameweek {} (user {}): {}",
+                week, user_id, e
+            );
             return Err(e);
         }
     };
 
     let embed = build_fixtures_embed(&fixtures);
 
-    info!("Successfully built fixtures response for gameweek {} (user {})", week, user_id);
+    info!(
+        "Successfully built fixtures response for gameweek {} (user {})",
+        week, user_id
+    );
     Ok(CreateInteractionResponse::Message(
-        CreateInteractionResponseMessage::new()
-            .embed(embed)
+        CreateInteractionResponseMessage::new().embed(embed),
     ))
 }
 
@@ -91,10 +109,13 @@ pub async fn run(_ctx: &Context, command: &CommandInteraction) -> Result<CreateI
 ///
 /// # Errors
 /// Returns error if no valid integer option is provided
-fn extract_gameweek(command: &CommandInteraction) -> Result<i32>{
+fn extract_gameweek(command: &CommandInteraction) -> Result<i32> {
     let resolved = command.data.options();
-    match resolved.first(){
-        Some(ResolvedOption{ value: ResolvedValue::Integer(id), ..}) => {
+    match resolved.first() {
+        Some(ResolvedOption {
+            value: ResolvedValue::Integer(id),
+            ..
+        }) => {
             // info!("Extracted gameweek: {}", id);
             Ok(*id as i32)
         }
@@ -119,18 +140,22 @@ fn extract_gameweek(command: &CommandInteraction) -> Result<i32>{
 /// # Display Format
 /// Shows each fixture with kickoff time centered and team names aligned
 /// in the format: "Date Time\nHome Team - Away Team"
-fn build_fixtures_embed(fixtures: &GameweekFixtures) -> CreateEmbed{
+fn build_fixtures_embed(fixtures: &GameweekFixtures) -> CreateEmbed {
     let mut description = String::new();
     description.push_str("```");
-    for fixture in fixtures.fixtures.iter(){
+    for fixture in fixtures.fixtures.iter() {
         let home_team = get_team_name(fixture.team_h).name;
         let away_team = get_team_name(fixture.team_a).name;
 
-        description.push_str(format!("{:^38}\n{:>17} - {:<18}\n\n", 
-            fixture.kickoff_time.format("%d.%m %H:%M"),
-            home_team, 
-            away_team, 
-        ).as_str());
+        description.push_str(
+            format!(
+                "{:^38}\n{:>17} - {:<18}\n\n",
+                fixture.kickoff_time.format("%d.%m %H:%M"),
+                home_team,
+                away_team,
+            )
+            .as_str(),
+        );
     }
     description.push_str("```");
 

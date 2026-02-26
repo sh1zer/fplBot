@@ -43,6 +43,7 @@ impl EventHandler for Handler {
             commands::check_manager_id::register(),
             commands::update_channel_league_id::register(),
             commands::check_channel_league_id::register(),
+            commands::check_team::register(),
         ];
         let guild_id = GuildId::new(1221876813165363270); // Replace with your server's ID
         match guild_id.set_commands(&ctx.http, commands).await {
@@ -78,6 +79,7 @@ impl EventHandler for Handler {
                     "check_channel_league_id" => {
                         commands::check_channel_league_id::run(&ctx, &command).await
                     }
+                    "check_team" => commands::check_team::run(&ctx, &command).await,
                     _ => {
                         let data =
                             CreateInteractionResponseMessage::new().content("Unknown command");

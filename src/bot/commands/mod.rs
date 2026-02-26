@@ -18,6 +18,7 @@
 
 pub mod check_channel_league_id;
 pub mod check_manager_id;
+pub mod check_team;
 pub mod fixtures;
 pub mod player;
 pub mod standings;

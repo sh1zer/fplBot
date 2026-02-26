@@ -10,6 +10,7 @@ use serenity::model::application::CommandOptionType;
 
 use crate::database::models::DBChannel;
 use crate::database::{models::DBUser, service::db_service};
+use crate::utils::type_conversion::r_option_to_i32;
 
 pub fn register() -> CreateCommand {
     CreateCommand::new("update_channel_league_id")
@@ -30,7 +31,7 @@ pub async fn run(
 ) -> Result<CreateInteractionResponse> {
     let channel_id: ChannelId = command.channel_id;
 
-    let league_id = extract_league_id(&command.data.options()[0])?;
+    let league_id = r_option_to_i32(&command.data.options()[0])?;
     // should probably be fine to go [0] since the argument is required
 
     info!(
@@ -55,17 +56,6 @@ pub async fn run(
                 channel_id, e
             );
             Err(anyhow!("Failed to update users manager_id"))
-        }
-    }
-}
-
-fn extract_league_id(option: &ResolvedOption) -> Result<i32> {
-    let val = &option.value;
-    match val {
-        ResolvedValue::Integer(id) => Ok(*id as i32),
-        _ => {
-            error!("No valid league_id provided in command options");
-            Err(anyhow!("Please provide a valid league ID"))
         }
     }
 }
