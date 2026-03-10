@@ -1,6 +1,5 @@
 #![allow(unused_imports)]
 use anyhow::{anyhow, Result};
-use fpl_client::client::FplApiClient;
 use log::{error, info};
 use serenity::all::{
     ChannelId, CommandInteraction, Context, CreateInteractionResponse,
@@ -11,6 +10,7 @@ use serenity::model::application::CommandOptionType;
 
 use crate::database::models::DBChannel;
 use crate::database::{models::DBUser, service::db_service};
+use crate::utils::fpl_client::fpl_client;
 use crate::utils::type_conversion::r_option_to_i32;
 
 pub fn register() -> CreateCommand {
@@ -80,9 +80,7 @@ pub async fn run(
         }
     };
 
-    let client = FplApiClient::new()?;
-
-    let bootstrap = client.get_bootstrap().await?;
+    let bootstrap = fpl_client().get_bootstrap().await?;
     let current_gw = bootstrap
         .events
         .iter()
@@ -90,8 +88,8 @@ pub async fn run(
         .map(|e| e.id)
         .ok_or_else(|| anyhow!("No current gameweek found"))?;
 
-    let picks = client.get_manager_picks(manager_id, current_gw).await?;
-    let manager = client.get_manager(manager_id).await?;
+    let picks = fpl_client().get_manager_picks(manager_id, current_gw).await?;
+    let manager = fpl_client().get_manager(manager_id).await?;
 
     let manager_name = format!(
         "{} {}",

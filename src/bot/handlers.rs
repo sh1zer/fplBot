@@ -9,7 +9,7 @@ use serenity::{
 };
 
 use crate::bot::commands;
-use fpl_client::client::FplApiClient;
+use crate::utils::fpl_client::fpl_client;
 
 /// Main event handler for the Discord bot
 ///
@@ -184,18 +184,9 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
 
     let needed_api_page = ((new_page / 2) + 1) as i32;
 
-    let standings_result = FplApiClient::new()
-        .and_then(|client| Ok(client))
-        .map_err(|e| e);
-
-    let standings_result = match standings_result {
-        Ok(client) => {
-            client
-                .get_league_standings_pages(league_id, needed_api_page, needed_api_page)
-                .await
-        }
-        Err(e) => Err(e),
-    };
+    let standings_result = fpl_client()
+        .get_league_standings_pages(league_id, needed_api_page, needed_api_page)
+        .await;
 
     match standings_result {
         Ok(standings) => {

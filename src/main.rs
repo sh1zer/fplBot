@@ -26,6 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         | GatewayIntents::MESSAGE_CONTENT;
 
     init_db_service().await?;
+    utils::fpl_client::init_fpl_client()?;
 
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)

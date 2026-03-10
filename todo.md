@@ -41,3 +41,5 @@ bro the fucking api is so ass i hate working with this
 
 
 wrote a little library time to rewrite YAY
+
+kinda pisses me off that im creating a new client ervery interaction i think i can do something similar to the database thing where i just have a static global and call it elsewhere

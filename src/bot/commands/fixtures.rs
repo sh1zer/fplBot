@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Result};
-use fpl_client::client::FplApiClient;
 use fpl_client::models::bootstrap_static::Team;
 use fpl_client::models::fixture::Fixture;
 use log::{error, info};
@@ -8,6 +7,8 @@ use serenity::all::{
 };
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
+
+use crate::utils::fpl_client::fpl_client;
 
 /// Registers the fixtures command with Discord
 pub fn register() -> CreateCommand {
@@ -37,8 +38,7 @@ pub async fn run(
         week, user_id
     );
 
-    let client = FplApiClient::new()?;
-    let fixtures = match client.get_fixtures(Some(week), None).await {
+    let fixtures: Vec<Fixture> = match fpl_client().get_fixtures(Some(week), None).await {
         Ok(fixtures) => {
             info!(
                 "Successfully fetched {} fixtures for gameweek {} (user {})",
@@ -57,7 +57,8 @@ pub async fn run(
         }
     };
 
-    let bootstrap = client.get_bootstrap().await?;
+    // this is horrible but i dont really feel like doing it correct right now
+    let bootstrap = fpl_client().get_bootstrap().await?;
     let teams = bootstrap.teams;
 
     let embed = build_fixtures_embed(&fixtures, &teams, week);
@@ -87,7 +88,7 @@ fn extract_gameweek(command: &CommandInteraction) -> Result<i32> {
 }
 
 /// Looks up a team name by ID from a list of teams
-fn get_team_name<'a>(teams: &'a [Team], team_id: i32) -> &'a str {
+fn get_team_name(teams: &[Team], team_id: i32) -> &str {
     teams
         .iter()
         .find(|t| t.id == team_id)

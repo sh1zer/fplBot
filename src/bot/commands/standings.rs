@@ -1,6 +1,6 @@
 use crate::database::service::db_service;
+use crate::utils::fpl_client::fpl_client;
 use anyhow::{anyhow, Result};
-use fpl_client::client::FplApiClient;
 use fpl_client::models::league::StandingEntry;
 use fpl_client::LeagueStandings;
 use log::{error, info};
@@ -36,8 +36,7 @@ pub async fn run(
         league_id, user_id
     );
 
-    let client = FplApiClient::new()?;
-    let standings = match client.get_league_standings(league_id).await {
+    let standings = match fpl_client().get_league_standings(league_id).await {
         Ok(standings) => {
             info!(
                 "Successfully fetched standings for league_id: {} (user {})",
