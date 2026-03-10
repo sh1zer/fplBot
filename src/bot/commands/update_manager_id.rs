@@ -1,8 +1,3 @@
-//! Manager-related Discord commands
-//!
-//! Provides functionality for users to manage their FPL manager association
-//! within the Discord bot, including setting and updating manager IDs.
-
 use anyhow::{anyhow, Result};
 use log::{error, info};
 use serenity::all::{

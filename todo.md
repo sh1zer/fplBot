@@ -34,3 +34,10 @@ then a deserializer/db updater [WIP]
 with a handler for detecting all modifications in general (probably in the same function honestly)
 
 we can then implement the channel tracking things, such as the db migrations necessary and the update handler for discord itself, [TODO] figure this out later
+
+
+okay maybe for now i'll do some sort of match review function? like at the end of the match we can show the top scorers etc
+bro the fucking api is so ass i hate working with this
+
+
+wrote a little library time to rewrite YAY

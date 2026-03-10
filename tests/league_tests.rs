@@ -1,4 +1,5 @@
-use fplbot::fpl::{client::init_fpl_service, models::league::LeagueStandings};
+use fpl_client::LeagueStandings;
+use fpl_client::client::FplApiClient;
 use serde_json::json;
 
 #[tokio::test]
@@ -39,8 +40,7 @@ async fn test_league_standings_deserialization() {
                     "rank_sort": 1,
                     "total": 1250,
                     "entry": 987654,
-                    "entry_name": "Dream Team FC",
-                    "has_played": true
+                    "entry_name": "Dream Team FC"
                 },
                 {
                     "id": 2,
@@ -51,58 +51,48 @@ async fn test_league_standings_deserialization() {
                     "rank_sort": 2,
                     "total": 1245,
                     "entry": 123789,
-                    "entry_name": "Super Squad",
-                    "has_played": true
+                    "entry_name": "Super Squad"
                 }
             ]
         }
     });
 
-    // Test deserialization
     let standings: LeagueStandings = serde_json::from_value(mock_response).unwrap();
 
     // Assert league info
-    assert_eq!(standings.league_info.id, 123456);
-    assert_eq!(standings.league_info.league_name, "Test League");
-    assert_eq!(standings.league_info.admin_manager_id, Some(987654));
-    assert!(!standings.league_info.is_closed);
+    assert_eq!(standings.league.id, 123456);
+    assert_eq!(standings.league.name, "Test League");
+    assert_eq!(standings.league.admin_entry, Some(987654));
+    assert!(!standings.league.closed);
 
     // Assert standings
-    assert_eq!(standings.standings.managers.len(), 2);
+    assert_eq!(standings.standings.results.len(), 2);
 
-    let first_manager = &standings.standings.managers[0];
-    assert_eq!(first_manager.manager_name, "John Doe");
-    assert_eq!(first_manager.current_rank, 1);
-    assert_eq!(first_manager.total_points, 1250);
-    assert_eq!(first_manager.team_name, "Dream Team FC");
+    let first = &standings.standings.results[0];
+    assert_eq!(first.player_name, "John Doe");
+    assert_eq!(first.rank, 1);
+    assert_eq!(first.total, 1250);
+    assert_eq!(first.entry_name, "Dream Team FC");
 
-    let second_manager = &standings.standings.managers[1];
-    assert_eq!(second_manager.manager_name, "Jane Smith");
-    assert_eq!(second_manager.current_rank, 2);
-    assert_eq!(second_manager.total_points, 1245);
+    let second = &standings.standings.results[1];
+    assert_eq!(second.player_name, "Jane Smith");
+    assert_eq!(second.rank, 2);
+    assert_eq!(second.total, 1245);
 }
 
 #[tokio::test]
 async fn test_league_standings_fetch_integration() {
-    // Try to initialize, but don't fail if already initialized
-    let _ = init_fpl_service();
+    let client = FplApiClient::new().expect("Failed to create FPL client");
 
-    // Test with a real league ID (this is a public test league)
-    // Note: This test will fail if the league doesn't exist or is private
-    let result = LeagueStandings::fetch(314).await;
+    let result = client.get_league_standings(314).await;
 
     match result {
         Ok(standings) => {
-            // Basic assertions to ensure we got valid data
-            assert!(standings.league_info.id > 0);
-            assert!(!standings.league_info.league_name.is_empty());
-            println!(
-                "Successfully fetched league: {}",
-                standings.league_info.league_name
-            );
+            assert!(standings.league.id > 0);
+            assert!(!standings.league.name.is_empty());
+            println!("Successfully fetched league: {}", standings.league.name);
         }
         Err(e) => {
-            // Log the error but don't fail the test since the league might not exist
             println!("Integration test warning: {}", e);
             println!("This is expected if league 314 doesn't exist or is private");
         }
@@ -111,20 +101,16 @@ async fn test_league_standings_fetch_integration() {
 
 #[tokio::test]
 async fn test_league_standings_fetch_invalid_id() {
-    // Try to initialize, but don't fail if already initialized
-    let _ = init_fpl_service();
+    let client = FplApiClient::new().expect("Failed to create FPL client");
 
-    // Test with an invalid league ID
-    let result = LeagueStandings::fetch(-1).await;
+    let result = client.get_league_standings(-1).await;
 
-    // Should return an error for invalid ID
     assert!(result.is_err());
 }
 
 #[test]
-fn test_datetime_parsing() {
-    // Test that our DateTime<Utc> fields parse correctly
-    let json_data = json!({
+fn test_standings_pagination_fields() {
+    let mock_response = json!({
         "new_entries": {
             "has_next": false,
             "page": 1,
@@ -153,20 +139,10 @@ fn test_datetime_parsing() {
         }
     });
 
-    let standings: LeagueStandings = serde_json::from_value(json_data).unwrap();
+    let standings: LeagueStandings = serde_json::from_value(mock_response).unwrap();
 
-    // Verify dates parsed correctly
-    assert_eq!(
-        standings.last_updated.format("%Y-%m-%d").to_string(),
-        "2025-09-13"
-    );
-    assert_eq!(
-        standings
-            .league_info
-            .created_date
-            .format("%Y-%m-%d")
-            .to_string(),
-        "2024-08-01"
-    );
+    assert!(!standings.standings.has_next);
+    assert_eq!(standings.standings.page, 1);
+    assert_eq!(standings.standings.results.len(), 0);
+    assert_eq!(standings.last_updated_data, "2025-09-13T22:16:35Z");
 }
-

@@ -1,5 +1,6 @@
 #![allow(unused_imports)]
 use anyhow::{anyhow, Result};
+use fpl_client::client::FplApiClient;
 use log::{error, info};
 use serenity::all::{
     ChannelId, CommandInteraction, Context, CreateInteractionResponse,
@@ -10,8 +11,6 @@ use serenity::model::application::CommandOptionType;
 
 use crate::database::models::DBChannel;
 use crate::database::{models::DBUser, service::db_service};
-use crate::fpl::fpl_client;
-use crate::fpl::models::manager;
 use crate::utils::type_conversion::r_option_to_i32;
 
 pub fn register() -> CreateCommand {
@@ -56,7 +55,7 @@ pub async fn run(
             let db_user: DBUser = db.get_user(user.id).await?;
             match db_user.manager_id {
                 Some(id) => id,
-                None => {
+                _ => {
                     return Ok(CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new().content(format!(
                             "User {} has not linked their FPL manager ID.",
@@ -70,7 +69,7 @@ pub async fn run(
             let user: DBUser = db.get_user(command.user.id).await?;
             match user.manager_id {
                 Some(id) => id,
-                None => {
+                _ => {
                     return Ok(CreateInteractionResponse::Message(
                         CreateInteractionResponseMessage::new().content(
                             "No manager_id configured for you. Use /update_manager_id please!",
@@ -81,32 +80,31 @@ pub async fn run(
         }
     };
 
-    let current_gw = fpl_client().get_current_gameweek_id().await?;
-    let team_picks = fpl_client()
-        .get_manager_team(manager_id, current_gw)
-        .await?;
+    let client = FplApiClient::new()?;
 
-    let manager_summary = fpl_client().get_manager_summary(manager_id).await?;
-    let player_first_name = manager_summary["player_first_name"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
-    let player_last_name = manager_summary["player_last_name"]
-        .as_str()
-        .unwrap_or("")
-        .to_string();
-    let manager_name = format!("{} {}", player_first_name, player_last_name);
-    let team_name = manager_summary["name"]
-        .as_str()
-        .unwrap_or("FPL Team")
-        .to_string();
+    let bootstrap = client.get_bootstrap().await?;
+    let current_gw = bootstrap
+        .events
+        .iter()
+        .find(|e| e.is_current)
+        .map(|e| e.id)
+        .ok_or_else(|| anyhow!("No current gameweek found"))?;
 
-    let general_data = fpl_client().get_general().await?;
+    let picks = client.get_manager_picks(manager_id, current_gw).await?;
+    let manager = client.get_manager(manager_id).await?;
+
+    let manager_name = format!(
+        "{} {}",
+        manager.player_first_name, manager.player_last_name
+    );
+    let team_name = manager.name.clone();
+
     let embed = build_team_embed(
-        &team_picks,
+        &picks,
         &manager_name,
         &team_name,
-        &general_data,
+        &bootstrap.elements,
+        &bootstrap.teams,
         current_gw,
         manager_id,
     );
@@ -117,56 +115,40 @@ pub async fn run(
 }
 
 fn build_team_embed(
-    picks_data: &serde_json::Value,
+    picks_data: &fpl_client::ManagerPicks,
     manager_name: &str,
     team_name: &str,
-    general_data: &serde_json::Value,
+    elements: &[fpl_client::models::bootstrap_static::Element],
+    teams: &[fpl_client::models::bootstrap_static::Team],
     gameweek: i32,
     manager_id: i32,
 ) -> CreateEmbed {
-    let picks = picks_data["picks"].as_array().unwrap();
-    let entry_history = &picks_data["entry_history"];
-    let active_chip = picks_data["active_chip"].as_str();
-
-    let elements = general_data["elements"].as_array().unwrap();
-    let teams = general_data["teams"].as_array().unwrap();
-
     let mut starters = Vec::new();
     let mut bench = Vec::new();
 
-    for pick in picks {
-        let element_id = pick["element"].as_i64().unwrap_or(0);
-        let is_captain = pick["is_captain"].as_bool().unwrap_or(false);
-        let is_vice = pick["is_vice_captain"].as_bool().unwrap_or(false);
-        let multiplier = pick["multiplier"].as_i64().unwrap_or(1);
-
-        let player_opt = elements
-            .iter()
-            .find(|e| e["id"].as_i64() == Some(element_id));
+    for pick in &picks_data.picks {
+        let player_opt = elements.iter().find(|e| e.id == pick.element);
         if let Some(player) = player_opt {
-            let team_id = player["team"].as_i64().unwrap_or(0);
-            let team_opt = teams.iter().find(|t| t["id"].as_i64() == Some(team_id));
+            let team_opt = teams.iter().find(|t| t.id == player.team);
 
-            let web_name = player["web_name"].as_str().unwrap_or("Unknown");
-            let team_short = team_opt
-                .and_then(|t| t["short_name"].as_str())
-                .unwrap_or("???");
-            let event_points = player["event_points"].as_i64().unwrap_or(0);
+            let web_name = &player.web_name;
+            let team_short = team_opt.map(|t| t.short_name.as_str()).unwrap_or("???");
+            let event_points = player.event_points;
 
-            let mut display_name = web_name.to_string();
-            if is_captain {
+            let mut display_name = web_name.clone();
+            if pick.is_captain {
                 display_name = format!("{} (C)", display_name);
-            } else if is_vice {
+            } else if pick.is_vice_captain {
                 display_name = format!("{} (V)", display_name);
             }
 
             let player_info = (
                 display_name,
                 team_short.to_string(),
-                event_points * multiplier,
+                event_points * pick.multiplier,
             );
 
-            if multiplier > 0 {
+            if pick.multiplier > 0 {
                 starters.push(player_info);
             } else {
                 bench.push(player_info);
@@ -174,19 +156,17 @@ fn build_team_embed(
         }
     }
 
-    let gw_points = entry_history["points"].as_i64().unwrap_or(0);
-    let total_points = entry_history["total_points"].as_i64().unwrap_or(0);
-    let overall_rank = entry_history["overall_rank"].as_i64().unwrap_or(0);
-    let rank = entry_history["rank"].as_i64().unwrap_or(0);
+    let gw_points = picks_data.entry_history.points;
+    let total_points = picks_data.entry_history.total_points;
+    let overall_rank = picks_data.entry_history.overall_rank.unwrap_or(0);
+    let rank = picks_data.entry_history.rank.unwrap_or(0);
 
     let mut description = String::new();
 
-    if let Some(chip) = active_chip {
+    if let Some(chip) = &picks_data.active_chip {
         description.push_str(&format!("**Active Chip:** {}\n\n", chip));
     }
 
-    // Determine widths dynamically, but cap them to ensure table structure
-    // Max width for name to fit in discord code block nicely
     let max_name_len = starters
         .iter()
         .chain(bench.iter())

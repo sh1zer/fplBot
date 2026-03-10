@@ -7,12 +7,10 @@ use std::env;
 use log::{error, info};
 
 mod bot;
-mod fpl;
 mod utils;
 mod database;
 
 use bot::handlers::Handler;
-use fpl::client::init_fpl_service;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -28,7 +26,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         | GatewayIntents::MESSAGE_CONTENT;
 
     init_db_service().await?;
-    init_fpl_service()?;
 
     let mut client = Client::builder(&token, intents)
         .event_handler(Handler)

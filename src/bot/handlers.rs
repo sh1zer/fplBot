@@ -1,10 +1,3 @@
-//! Discord event handlers for the FPL bot
-//!
-//! This module contains the main event handler implementation that processes
-//! Discord events, including command interactions and component interactions.
-//! It handles bot initialization, command registration, and routing of user
-//! interactions to appropriate command handlers.
-
 use log::info;
 use serenity::{
     all::{
@@ -15,7 +8,8 @@ use serenity::{
     prelude::*,
 };
 
-use crate::{bot::commands, fpl};
+use crate::bot::commands;
+use fpl_client::client::FplApiClient;
 
 /// Main event handler for the Discord bot
 ///
@@ -189,13 +183,24 @@ async fn handle_standings_interaction(ctx: &Context, component: ComponentInterac
     };
 
     let needed_api_page = ((new_page / 2) + 1) as i32;
-    let standings_result =
-        fpl::models::league::LeagueStandings::fetch_page(league_id, needed_api_page).await;
+
+    let standings_result = FplApiClient::new()
+        .and_then(|client| Ok(client))
+        .map_err(|e| e);
+
+    let standings_result = match standings_result {
+        Ok(client) => {
+            client
+                .get_league_standings_pages(league_id, needed_api_page, needed_api_page)
+                .await
+        }
+        Err(e) => Err(e),
+    };
 
     match standings_result {
         Ok(standings) => {
             let per_page = 25;
-            let total_managers = standings.standings.managers.len();
+            let total_managers = standings.standings.results.len();
             let max_page = (50 * (needed_api_page as usize) + total_managers - 1) / per_page;
             let actual_page = new_page.min(max_page);
 

@@ -1,10 +1,7 @@
-//! Fixtures command implementation
-//!
-//! Provides Discord slash command functionality for displaying FPL gameweek fixtures
-//! with match details, scores, and team information.
-
-use crate::fpl::models::teams::get_team_name;
 use anyhow::{anyhow, Result};
+use fpl_client::client::FplApiClient;
+use fpl_client::models::bootstrap_static::Team;
+use fpl_client::models::fixture::Fixture;
 use log::{error, info};
 use serenity::all::{
     CommandInteraction, Context, CreateInteractionResponse, CreateInteractionResponseMessage,
@@ -12,15 +9,7 @@ use serenity::all::{
 use serenity::builder::{CreateCommand, CreateCommandOption, CreateEmbed};
 use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedValue};
 
-use crate::fpl::models::fixtures::{fetch_fixtures, GameweekFixtures};
-
 /// Registers the fixtures command with Discord
-///
-/// Creates the command definition for the `/fixtures` slash command with required
-/// gameweek parameter.
-///
-/// # Returns
-/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("fixtures")
         .description("Get a given weeks fixtures")
@@ -35,25 +24,6 @@ pub fn register() -> CreateCommand {
 }
 
 /// Main handler for the `/fixtures` slash command
-///
-/// Fetches and displays FPL fixtures for a specific gameweek with match details,
-/// scores, and kickoff times in an embed format.
-///
-/// # Arguments
-/// * `_ctx` - Discord context (unused in current implementation)
-/// * `command` - The slash command interaction containing user input
-///
-/// # Returns
-/// * `Result<CreateInteractionResponse>` - Discord response with fixtures embed
-///
-/// # Errors
-/// Returns error if:
-/// - Gameweek number is not provided or invalid
-/// - FPL API request fails
-/// - Fixture data cannot be processed
-///
-/// # Example Usage
-/// `/fixtures gameweek:1`
 pub async fn run(
     _ctx: &Context,
     command: &CommandInteraction,
@@ -67,11 +37,12 @@ pub async fn run(
         week, user_id
     );
 
-    let fixtures = match fetch_fixtures(week).await {
+    let client = FplApiClient::new()?;
+    let fixtures = match client.get_fixtures(Some(week), None).await {
         Ok(fixtures) => {
             info!(
                 "Successfully fetched {} fixtures for gameweek {} (user {})",
-                fixtures.fixtures.len(),
+                fixtures.len(),
                 week,
                 user_id
             );
@@ -86,7 +57,10 @@ pub async fn run(
         }
     };
 
-    let embed = build_fixtures_embed(&fixtures);
+    let bootstrap = client.get_bootstrap().await?;
+    let teams = bootstrap.teams;
+
+    let embed = build_fixtures_embed(&fixtures, &teams, week);
 
     info!(
         "Successfully built fixtures response for gameweek {} (user {})",
@@ -98,27 +72,13 @@ pub async fn run(
 }
 
 /// Extracts gameweek number from Discord command options
-///
-/// Parses the first command option to extract the gameweek integer value.
-///
-/// # Arguments
-/// * `command` - The Discord command interaction containing options
-///
-/// # Returns
-/// * `Result<i32>` - The gameweek number as a 32-bit integer
-///
-/// # Errors
-/// Returns error if no valid integer option is provided
 fn extract_gameweek(command: &CommandInteraction) -> Result<i32> {
     let resolved = command.data.options();
     match resolved.first() {
         Some(ResolvedOption {
             value: ResolvedValue::Integer(id),
             ..
-        }) => {
-            // info!("Extracted gameweek: {}", id);
-            Ok(*id as i32)
-        }
+        }) => Ok(*id as i32),
         _ => {
             error!("No valid gameweek provided in command options");
             Err(anyhow!("Please provide a valid gameweek"))
@@ -126,33 +86,42 @@ fn extract_gameweek(command: &CommandInteraction) -> Result<i32> {
     }
 }
 
+/// Looks up a team name by ID from a list of teams
+fn get_team_name<'a>(teams: &'a [Team], team_id: i32) -> &'a str {
+    teams
+        .iter()
+        .find(|t| t.id == team_id)
+        .map(|t| t.name.as_str())
+        .unwrap_or("Unknown")
+}
+
 /// Builds a Discord embed displaying gameweek fixtures
-///
-/// Creates a formatted embed with fixture data, including team names and kickoff times.
-/// Uses fixed-width formatting for consistent alignment in a code block.
-///
-/// # Arguments
-/// * `fixtures` - The gameweek fixtures data from FPL API
-///
-/// # Returns
-/// * `CreateEmbed` - Discord embed with formatted fixtures list
-///
-/// # Display Format
-/// Shows each fixture with kickoff time centered and team names aligned
-/// in the format: "Date Time\nHome Team - Away Team"
-fn build_fixtures_embed(fixtures: &GameweekFixtures) -> CreateEmbed {
+fn build_fixtures_embed(fixtures: &[Fixture], teams: &[Team], gameweek: i32) -> CreateEmbed {
     let mut description = String::new();
     description.push_str("```");
-    for fixture in fixtures.fixtures.iter() {
-        let home_team = get_team_name(fixture.team_h).name;
-        let away_team = get_team_name(fixture.team_a).name;
+    for fixture in fixtures.iter() {
+        let home_team = get_team_name(teams, fixture.team_h);
+        let away_team = get_team_name(teams, fixture.team_a);
+        let kickoff = fixture.kickoff_time.as_deref().unwrap_or("TBD");
+        // Trim to "dd.mm HH:MM" if possible, otherwise use as-is
+        let kickoff_display = if kickoff.len() >= 16 {
+            // ISO format: "2024-08-16T20:00:00Z" -> "16.08 20:00"
+            let date_part = &kickoff[..10]; // "2024-08-16"
+            let time_part = &kickoff[11..16]; // "20:00"
+            let parts: Vec<&str> = date_part.split('-').collect();
+            if parts.len() == 3 {
+                format!("{}.{} {}", parts[2], parts[1], time_part)
+            } else {
+                kickoff.to_string()
+            }
+        } else {
+            kickoff.to_string()
+        };
 
         description.push_str(
             format!(
                 "{:^38}\n{:>17} - {:<18}\n\n",
-                fixture.kickoff_time.format("%d.%m %H:%M"),
-                home_team,
-                away_team,
+                kickoff_display, home_team, away_team,
             )
             .as_str(),
         );
@@ -160,7 +129,7 @@ fn build_fixtures_embed(fixtures: &GameweekFixtures) -> CreateEmbed {
     description.push_str("```");
 
     CreateEmbed::new()
-        .title(format!("Gameweek {}", fixtures.gameweek))
+        .title(format!("Gameweek {}", gameweek))
         .description(description)
         .color(0x37003c) // purple
 }

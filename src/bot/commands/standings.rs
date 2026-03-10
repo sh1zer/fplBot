@@ -1,11 +1,8 @@
-//! League standings command implementation
-//!
-//! Provides Discord slash command functionality for displaying FPL league standings
-//! with interactive pagination and navigation controls.
-
 use crate::database::service::db_service;
-use crate::fpl::models::league::{LeagueStandings, StandingsManager};
 use anyhow::{anyhow, Result};
+use fpl_client::client::FplApiClient;
+use fpl_client::models::league::StandingEntry;
+use fpl_client::LeagueStandings;
 use log::{error, info};
 use serenity::all::{
     ButtonStyle, CommandInteraction, Context, CreateInteractionResponse,
@@ -16,25 +13,6 @@ use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedVa
 use std::borrow::Cow;
 
 /// Main handler for the `/standings` slash command
-///
-/// Fetches and displays league standings for a given league ID with interactive
-/// pagination controls. Shows manager names, positions, and points in an embed format.
-///
-/// # Arguments
-/// * `_ctx` - Discord context (unused in current implementation)
-/// * `command` - The slash command interaction containing user input
-///
-/// # Returns
-/// * `Result<CreateInteractionResponse>` - Discord response with standings embed and navigation buttons
-///
-/// # Errors
-/// Returns error if:
-/// - League ID is not provided or invalid
-/// - FPL API request fails
-/// - League data cannot be processed
-///
-/// # Example Usage
-/// `/standings league_id:123456`
 pub async fn run(
     _ctx: &Context,
     command: &CommandInteraction,
@@ -58,7 +36,8 @@ pub async fn run(
         league_id, user_id
     );
 
-    let standings = match LeagueStandings::fetch(league_id).await {
+    let client = FplApiClient::new()?;
+    let standings = match client.get_league_standings(league_id).await {
         Ok(standings) => {
             info!(
                 "Successfully fetched standings for league_id: {} (user {})",
@@ -93,17 +72,6 @@ pub async fn run(
 }
 
 /// Extracts league ID from Discord command options
-///
-/// Parses the first command option to extract the league ID integer value.
-///
-/// # Arguments
-/// * `options` - Array of resolved command options from Discord
-///
-/// # Returns
-/// * `Result<i32>` - The league ID as a 32-bit integer
-///
-/// # Errors
-/// Returns error if no valid integer option is provided
 fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
     match options.first() {
         Some(ResolvedOption {
@@ -118,50 +86,35 @@ fn extract_league_id(options: &[ResolvedOption]) -> Result<i32> {
 }
 
 /// Builds a Discord embed displaying league standings
-///
-/// Creates a formatted embed with standings data, including manager names, ranks,
-/// points, and gameweek performance. Uses fixed-width formatting for consistent alignment.
-///
-/// # Arguments
-/// * `standings` - The league standings data from FPL API
-/// * `page` - Current page number for pagination (0-based)
-///
-/// # Returns
-/// * `CreateEmbed` - Discord embed with formatted standings table
-///
-/// # Display Format
-/// Shows columns for: Rank, Change, Manager Name, Total Points, GW Points
-/// Uses code block formatting for monospace alignment
 pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> CreateEmbed {
-    let managers = &standings.standings.managers;
+    let managers = &standings.standings.results;
     let per_page = 25;
     let start_idx = (page * per_page) % 50;
     let end_idx = (start_idx + 25).min(managers.len());
     let page_managers = &managers[start_idx..end_idx];
 
-    // Calculate maximum widths needed for each column (from all managers for consistency)
     let max_rank_width = managers
         .iter()
-        .map(|m| number_len(m.current_rank))
+        .map(|m| number_len(m.rank))
         .max()
         .unwrap_or(2);
 
     let max_change_width = managers
         .iter()
-        .map(|m| number_len(-(m.current_rank - m.previous_rank)))
+        .map(|m| number_len(-(m.rank - m.last_rank)))
         .max()
         .unwrap_or(4)
         + 3;
 
     let max_points_width = managers
         .iter()
-        .map(|m| number_len(m.total_points))
+        .map(|m| number_len(m.total))
         .max()
         .unwrap_or(4);
 
     let max_gw_width = managers
         .iter()
-        .map(|m| number_len(m.gameweek_points))
+        .map(|m| number_len(m.event_total))
         .max()
         .unwrap_or(4)
         + 2;
@@ -170,22 +123,21 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
     let fixed_width =
         max_rank_width + max_change_width + max_points_width + max_gw_width + separators_width;
     let total_available: usize = 40;
-    let name_width = total_available.saturating_sub(fixed_width).max(5); // minimum 5 chars for names
+    let name_width = total_available.saturating_sub(fixed_width).max(5);
 
     let mut description = String::new();
     description.push_str("```");
-    // description.push_str(format!("{}{}{}{}", max_rank_width, max_change_width, max_points_width, max_gw_width).as_str());
     for manager in page_managers.iter() {
         let name = format_name(manager, name_width);
-        let rank_diff = -(manager.current_rank - manager.previous_rank);
+        let rank_diff = -(manager.rank - manager.last_rank);
 
         description.push_str(&format!(
             "#{rank:<rank_width$}{change:<change_width$}| {name:<name_width$} | {total:<points_width$} {gw:<gw_width$}pts\n",
-            rank = manager.current_rank,
+            rank = manager.rank,
             change = format!("({:+})", rank_diff),
             name = name,
-            total = manager.total_points,
-            gw = format!("({})", manager.gameweek_points),
+            total = manager.total,
+            gw = format!("({})", manager.event_total),
             rank_width = max_rank_width,
             change_width = max_change_width,
             name_width = name_width,
@@ -203,12 +155,12 @@ pub fn build_standings_embed(standings: &LeagueStandings, page: usize) -> Create
     };
 
     CreateEmbed::new()
-        .title(format!("🏆  {}", standings.league_info.league_name))
+        .title(format!("🏆  {}", standings.league.name))
         .description(description)
-        .color(0x37003c) // purple
+        .color(0x37003c)
         .footer(serenity::builder::CreateEmbedFooter::new(format!(
             "League ID: {} • Page {} of {}",
-            standings.league_info.id,
+            standings.league.id,
             page + 1,
             total_pages
         )))
@@ -222,24 +174,9 @@ pub struct NavigationButtons {
 }
 
 /// Creates navigation buttons for standings pagination
-///
-/// Builds previous, next, and refresh buttons with appropriate enabled/disabled states
-/// based on current page position and available data.
-///
-/// # Arguments
-/// * `page` - Current page number (0-based)
-/// * `standings` - League standings data to determine pagination limits
-///
-/// # Returns
-/// * `NavigationButtons` - Struct containing the three navigation buttons
-///
-/// # Button Behavior
-/// - Previous: Disabled on first page
-/// - Next: Disabled on last page (when no more data available)
-/// - Refresh: Always enabled
 pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> NavigationButtons {
     let per_page = 25;
-    let total_managers = standings.standings.managers.len();
+    let total_managers = standings.standings.results.len();
     let api_has_next = standings.standings.has_next;
     let total_pages_current = (total_managers + per_page - 1) / per_page;
     let has_prev = page > 0;
@@ -261,12 +198,6 @@ pub fn build_navigation_buttons(page: usize, standings: &LeagueStandings) -> Nav
 }
 
 /// Registers the standings command with Discord
-///
-/// Creates the command definition for the `/standings` slash command with required
-/// league_id parameter.
-///
-/// # Returns
-/// * `CreateCommand` - Discord command definition ready for registration
 pub fn register() -> CreateCommand {
     CreateCommand::new("standings")
         .description("Get FPL league standings")
@@ -277,27 +208,14 @@ pub fn register() -> CreateCommand {
 }
 
 /// Formats manager name to fit within specified width
-///
-/// Truncates long manager names using intelligent strategies:
-/// 1. Use full name if it fits
-/// 2. Use "First L." format if shorter
-/// 3. Use "First." if still too long
-///
-/// # Arguments
-/// * `manager` - The manager data containing the name
-/// * `name_width` - Maximum character width allowed
-///
-/// # Returns
-/// * `Cow<str>` - Formatted name that fits within the width constraint
-fn format_name(manager: &'_ StandingsManager, name_width: usize) -> Cow<'_, str> {
-    let name: Cow<str> = if manager.manager_name.chars().count() <= name_width {
-        Cow::Borrowed(&manager.manager_name)
+fn format_name(manager: &'_ StandingEntry, name_width: usize) -> Cow<'_, str> {
+    let name: Cow<str> = if manager.player_name.chars().count() <= name_width {
+        Cow::Borrowed(&manager.player_name)
     } else {
         let (first_name, last_name) = manager
-            .manager_name
+            .player_name
             .split_once(" ")
-            .unwrap_or((&manager.manager_name, ""));
-        // creates truncated name like "John S."
+            .unwrap_or((&manager.player_name, ""));
         let truncated = format!(
             "{} {}.",
             first_name,
@@ -306,7 +224,6 @@ fn format_name(manager: &'_ StandingsManager, name_width: usize) -> Cow<'_, str>
         if truncated.chars().count() <= name_width {
             Cow::Owned(truncated)
         } else {
-            // if truncated too long take first name
             let first_only: String = first_name
                 .chars()
                 .take(name_width.saturating_sub(1))
@@ -318,15 +235,6 @@ fn format_name(manager: &'_ StandingsManager, name_width: usize) -> Cow<'_, str>
 }
 
 /// Calculates the character width needed to display a number
-///
-/// Counts the number of digits plus space for negative sign if applicable.
-/// Used for calculating column widths in standings tables.
-///
-/// # Arguments
-/// * `num` - The integer to measure
-///
-/// # Returns
-/// * `usize` - Number of characters needed to display the number
 fn number_len(mut num: i32) -> usize {
     let mut count = 0;
     if num <= 0 {

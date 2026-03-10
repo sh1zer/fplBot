@@ -1,16 +1,4 @@
-//! Fixture tracking Discord commands
-//!
-//! Provides functionality for users to track specific FPL fixtures and receive
-//! updates about goals, cards, and other match events.
-//!
-//! # TODO
-//! This module is currently under development and needs implementation for:
-//! - Fixture tracking subscription system
-//! - Real-time match event notifications
-//! - User notification preferences
-//! - Integration with database for persistent tracking
-
-use serenity::all::{CommandOptionType};
+use serenity::all::CommandOptionType;
 use serenity::builder::{CreateCommand, CreateCommandOption};
 
 /// Registers the track_fixture command with Discord
@@ -27,11 +15,8 @@ pub fn register() -> CreateCommand {
     CreateCommand::new("track_fixture")
         .description("Get updates on given fixture")
         .add_option(
-            CreateCommandOption::new(
-                CommandOptionType::Integer,
-                "fixture_id",
-                "The fixture ID"
-            ).required(true)
+            CreateCommandOption::new(CommandOptionType::Integer, "fixture_id", "The fixture ID")
+                .required(true),
         )
 }
 
