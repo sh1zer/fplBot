@@ -25,7 +25,7 @@ pub fn db_service() -> &'static Database {
 }
 
 pub struct Database {
-    pool: SqlitePool,
+    pub(crate) pool: SqlitePool,
 }
 
 impl Database {

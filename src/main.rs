@@ -1,34 +1,34 @@
 #![allow(dead_code)]
 
-use dotenvy::dotenv;
 use crate::database::service::init_db_service;
+use crate::utils::fpl_client::init_fpl_client;
+use dotenvy::dotenv;
+use log::{error, info};
 use serenity::prelude::*;
 use std::env;
-use log::{error, info};
 
 mod bot;
-mod utils;
 mod database;
+mod utils;
 
 use bot::handlers::Handler;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
-    
+
     tracing_subscriber::fmt::init();
 
-    let token = env::var("BOT_TOKEN")
-        .expect("Expected BOT_TOKEN in environment");
+    let token = env::var("BOT_TOKEN").expect("Expected BOT_TOKEN in environment");
 
-    let intents = GatewayIntents::GUILD_MESSAGES 
+    let intents = GatewayIntents::GUILD_MESSAGES
         | GatewayIntents::DIRECT_MESSAGES
         | GatewayIntents::MESSAGE_CONTENT;
 
     init_db_service().await?;
-    utils::fpl_client::init_fpl_client()?;
+    init_fpl_client()?;
 
-    let mut client = Client::builder(&token, intents)
+    let mut client = serenity::Client::builder(&token, intents)
         .event_handler(Handler)
         .await
         .expect("Error creating client");
