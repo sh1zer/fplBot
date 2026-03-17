@@ -1,3 +1,3 @@
 WIP discord bot 
 
-do no read into the source code this was written in sporadic sessions across a decently long time period so i got confused at my own thought process a lot
+a bunch of stuff like league standings/user picks/upcoming fixtures/user + channel info retention works already but live data tracking seems a bit more complicated so still WIP!
